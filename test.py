@@ -1,6 +1,7 @@
 import argparse
 import warnings
 from collections import OrderedDict
+
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -67,9 +68,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data_path, batch_size, epochs, model_path = args.data_path, args.batch_size, args.epochs, args.model
     model_type, features_dim = model_path.split('_')[-3], int(model_path.split('_')[-2])
-    train_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'train'), transform=utils.train_transform)
+    train_data = datasets.CIFAR10(root='data', train=True, transform=utils.train_transform, download=True)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    test_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'val'), transform=utils.test_transform)
+    test_data = datasets.CIFAR10(root='data', train=False, transform=utils.test_transform, download=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     features_extractor = Net(model_type, features_dim)

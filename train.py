@@ -43,16 +43,16 @@ def train(model_q, model_k, train_loader, queue, optimizer, epoch, temp=0.07):
     for data, target in train_bar:
         x_q, x_k = data
         x_q, x_k = x_q.to('cuda'), x_k.to('cuda')
+        N, K = x_q.shape[0], queue.shape[0]
 
         q = model_q(x_q)
 
         # shuffle BN
-        shuffle_idx, reverse_idx = get_shuffle_idx(batch_size)
+        shuffle_idx, reverse_idx = get_shuffle_idx(N)
         x_k = x_k[shuffle_idx.to('cuda')]
         k = model_k(x_k)
         k = k[reverse_idx.to('cuda')].detach()
 
-        N, K = x_q.shape[0], queue.shape[0]
         l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
         l_neg = torch.mm(q.view(N, -1), queue.T.view(-1, K))
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     batch_size, epochs, features_dim, data_path = args.batch_size, args.epochs, args.features_dim, args.data_path
     dictionary_size, model_type = args.dictionary_size, args.model_type
-    train_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'train'), transform=utils.train_transform)
+    train_data = datasets.CIFAR10(root='data', train=True, transform=utils.train_transform, download=True)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
     model_q, model_k = Net(model_type, features_dim).to('cuda'), Net(model_type, features_dim).to('cuda')

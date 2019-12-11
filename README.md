@@ -54,29 +54,25 @@ optional arguments:
 
 ## Results
 There are some difference between this implementation and official implementation:
-1. The image sizes of `Multi-Scale Training` are (640, 672, 704, 736, 768, 800) for `coco` dataset;
-2. The image sizes of `Multi-Scale Training` are (800, 832, 864, 896, 928, 960, 992, 1024) for `cityscapes` dataset;
-3. No `RandomCrop` used;
-4. Learning rate policy is `WarmupCosineLR`;
+1. The training epoch is `50`;
+2. The `batch size` is `256` for `resnet18` backbone, `128` for `resnet50` backbone.
 
 <table>
 	<tbody>
 		<!-- START TABLE -->
 		<!-- TABLE HEADER -->
 		<th>Name</th>
+		<th>train time (s/iter)^*</th>
+		<th>train mem (GB)^*</th>
 		<th>train time (s/iter)</th>
-		<th>inference time (s/im)</th>
 		<th>train mem (GB)</th>
-		<th>PA</br>%</th>
-		<th>mean PA %</th>
-		<th>mean IoU %</th>
-		<th>FW IoU %</th>
+		<th>Top1 Acc %</th>
+		<th>Top5 Acc %</th>
 		<th>download link</th>
 		<!-- TABLE BODY -->
 		<!-- ROW: r18 -->
 		<tr>
-			<td align="center"><a href="configs/r50_coco.yaml">R50</a></td>
-			<td align="center">1.04</td>
+			<td align="center">ResNet18</td>
 			<td align="center">0.11</td>
 			<td align="center">11.14</td>
 			<td align="center">80.49</td>
@@ -87,9 +83,8 @@ There are some difference between this implementation and official implementatio
 		</tr>
 		<!-- ROW: r50 -->
 		<tr>
-			<td align="center"><a href="configs/r101_coco.yaml">R101</a></td>
+			<td align="center">ResNet50</td>
 			<td align="center">1.55</td>
-			<td align="center">0.18</td>
 			<td align="center">17.92</td>
 			<td align="center">81.16</td>
 			<td align="center">54.54</td>

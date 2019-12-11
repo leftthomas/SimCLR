@@ -62,8 +62,8 @@ There are some difference between this implementation and official implementatio
 		<!-- START TABLE -->
 		<!-- TABLE HEADER -->
 		<th>Name</th>
-		<th>train time (s/iter)^*</th>
-		<th>train mem (GB)^*</th>
+		<th>train time (s/iter)*</th>
+		<th>train mem (GB)*</th>
 		<th>train time (s/iter)</th>
 		<th>train mem (GB)</th>
 		<th>Top1 Acc %</th>
@@ -94,3 +94,5 @@ There are some difference between this implementation and official implementatio
 		</tr>
 	</tbody>
 </table>
+
+`*` means that is for Features Extractor training stage, without `*` means that is for Model training stage.

@@ -54,7 +54,7 @@ optional arguments:
 
 ## Results
 There are some difference between this implementation and official implementation:
-1. The training epoch is `50`;
+1. `Adam` optimizer with init learning rate `1e-3` is used;
 2. The `batch size` is `256` for `resnet18` backbone, `128` for `resnet50` backbone.
 
 <table>

@@ -80,7 +80,7 @@ if __name__ == '__main__':
     model = nn.Sequential(OrderedDict(
         [('features_extractor', features_extractor), ('classifier', nn.Linear(features_dim, len(train_data.classes)))]))
     model = model.to('cuda')
-    optimizer = optim.SGD(model.classifier.parameters(), lr=30, momentum=0.9, weight_decay=0)
+    optimizer = optim.Adam(model.classifier.parameters(), lr=1e-3)
     cross_entropy_loss = nn.CrossEntropyLoss()
     print("# trainable parameters:", sum(param.numel() if param.requires_grad else 0 for param in model.parameters()))
     results = {'train_loss': [], 'train_acc': [], 'test_loss': [], 'test_acc@1': [], 'test_acc@5': []}

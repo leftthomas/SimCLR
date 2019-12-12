@@ -93,7 +93,7 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
     model_q, model_k = Net(model_type, features_dim).to('cuda'), Net(model_type, features_dim).to('cuda')
-    optimizer = optim.SGD(model_q.parameters(), lr=0.03, momentum=0.9, weight_decay=0.0001)
+    optimizer = optim.Adam(model_q.parameters(), lr=1e-3)
     print("# trainable parameters:", sum(param.numel() if param.requires_grad else 0 for param in model_q.parameters()))
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(epochs * 0.6), int(epochs * 0.8)], gamma=0.1)
     cross_entropy_loss = nn.CrossEntropyLoss()

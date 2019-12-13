@@ -42,9 +42,6 @@ def dequeue_data(data, k=4096):
 
 
 def momentum_update(model_q, model_k, beta=0.999):
-    param_k = model_k.state_dict()
-    param_q = model_q.named_parameters()
-    for n, q in param_q:
-        if n in param_k:
-            param_k[n].data.copy_(beta * param_k[n].data + (1 - beta) * q.data)
-    model_k.load_state_dict(param_k)
+    """ model_k = beta * model_k + (1 - beta) model_q """
+    for p1, p2 in zip(model_q.parameters(), model_k.parameters()):
+        p2.data.mul_(beta).add_(1 - beta, p1.detach().data)

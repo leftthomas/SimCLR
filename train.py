@@ -68,8 +68,9 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
 
 def test(model, train_loader, test_loader, epoch):
     model.eval()
-    total_top1, total_top5, n_data, memory_bank, test_bar = 0, 0, 0, [], tqdm(test_loader)
+    total_top1, total_top5, n_data, memory_bank = 0, 0, 0, []
     train_bar = tqdm(train_loader, desc='Feature extracting')
+    test_bar = tqdm(test_loader)
     with torch.no_grad():
         for data, target in train_bar:
             memory_bank.append(model(data.to('cuda')).cpu())
@@ -106,12 +107,11 @@ if __name__ == '__main__':
     batch_size, epochs, features_dim, data_path = args.batch_size, args.epochs, args.features_dim, args.data_path
     dictionary_size, model_type = args.dictionary_size, args.model_type
     train_data = datasets.CIFAR10(root='data', train=True, transform=utils.train_transform, download=True)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
     train_test_data = datasets.CIFAR10(root='data', train=True, transform=utils.test_transform, download=True)
-    train_test_loader = DataLoader(train_test_data, batch_size=batch_size, shuffle=False, num_workers=8,
-                                   pin_memory=True)
+    train_test_loader = DataLoader(train_test_data, batch_size=batch_size, shuffle=False, num_workers=8)
     test_data = datasets.CIFAR10(root='data', train=False, transform=utils.test_transform, download=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8)
 
     model_q, model_k = Net(model_type, features_dim).to('cuda'), Net(model_type, features_dim).to('cuda')
     optimizer = optim.SGD(model_q.parameters(), lr=0.03, momentum=0.9, weight_decay=0.0001)

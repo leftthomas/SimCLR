@@ -44,7 +44,7 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
 
         if K >= dictionary_size:
             l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
-            l_neg = torch.mm(q.view(N, -1), queue.T.view(-1, K))
+            l_neg = torch.mm(q.view(N, -1), queue.detach().t().view(-1, K).contiguous())
 
             logits = torch.cat([l_pos.view(N, 1), l_neg], dim=1)
             labels = torch.zeros(N, dtype=torch.long).to('cuda')
@@ -113,7 +113,9 @@ if __name__ == '__main__':
     test_data = datasets.CIFAR10(root='data', train=False, transform=utils.test_transform, download=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8)
 
-    model_q, model_k = Net(model_type, features_dim).to('cuda'), Net(model_type, features_dim).to('cuda')
+    model_q = Net(model_type, features_dim).to('cuda')
+    model_k = Net(model_type, features_dim).to('cuda')
+    utils.momentum_update(model_q, model_k, beta=1.0)
     optimizer = optim.SGD(model_q.parameters(), lr=0.03, momentum=0.9, weight_decay=0.0001)
     print("# trainable parameters:", sum(param.numel() if param.requires_grad else 0 for param in model_q.parameters()))
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(epochs * 0.6), int(epochs * 0.8)], gamma=0.1)

@@ -31,18 +31,17 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
     total_loss, n_data, train_bar = 0, 0, tqdm(train_loader)
     for data, target in train_bar:
         x_q, x_k = data
-        x_q, x_k = x_q.to('cuda'), x_k.to('cuda')
-        N, K = x_q.shape[0], queue.shape[0]
-
-        q = model_q(x_q)
+        K, N = queue.shape[0], x_q.shape[0]
 
         # shuffle BN
         shuffle_idx, reverse_idx = get_shuffle_idx(N)
-        x_k = x_k[shuffle_idx.to('cuda')]
+        x_k = x_k.to('cuda')[shuffle_idx.to('cuda')]
         k = model_k(x_k)
         k = k[reverse_idx.to('cuda')].detach()
 
         if K >= dictionary_size:
+            q = model_q(x_q.to('cuda'))
+
             l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
             l_neg = torch.mm(q.view(N, -1), queue.detach().t().view(-1, K).contiguous())
 

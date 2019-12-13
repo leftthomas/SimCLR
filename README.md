@@ -30,7 +30,7 @@ and extracted as following:
 ```
 
 ## Usage
-### Train Features Extractor
+### Train Model
 ```
 python train.py --epochs 50 --dictionary_size 4096
 optional arguments:
@@ -42,28 +42,17 @@ optional arguments:
 --dictionary_size             Size of dictionary [default value is 65536]
 ```
 
-### Train Model
-```
-python test.py --epochs 100 --batch_size 512
-optional arguments:
---data_path                   Path to dataset [default value is '/home/data/imagenet/ILSVRC2012']
---batch_size                  Number of images in each mini-batch [default value is 256]
---epochs                      Number of sweeps over the dataset to train [default value is 100]
---model                       Features extractor file [default value is 'epochs/features_extractor_resnet18_128_65536.pth']
-```
-
 ## Results
 There are some difference between this implementation and official implementation:
-1. `Adam` optimizer with init learning rate `1e-3` is used;
-2. The `batch size` is `256` for `resnet18` backbone, `128` for `resnet50` backbone.
+1. The `batch size` is `256` for `resnet18` backbone, `128` for `resnet50` backbone;
+2. The testing stage uses `KNN` to predict the labels as 
+[Unsupervised Feature Learning via Non-Parametric Instance Discrimination](https://arxiv.org/abs/1805.01978) described.
 
 <table>
 	<tbody>
 		<!-- START TABLE -->
 		<!-- TABLE HEADER -->
 		<th>Name</th>
-		<th>train time (s/iter)*</th>
-		<th>train mem (GB)*</th>
 		<th>train time (s/iter)</th>
 		<th>train mem (GB)</th>
 		<th>Top1 Acc %</th>
@@ -73,8 +62,6 @@ There are some difference between this implementation and official implementatio
 		<!-- ROW: r18 -->
 		<tr>
 			<td align="center">ResNet18</td>
-			<td align="center">0.11</td>
-			<td align="center">11.14</td>
 			<td align="center">80.49</td>
 			<td align="center">53.92</td>
 			<td align="center">42.71</td>
@@ -84,8 +71,6 @@ There are some difference between this implementation and official implementatio
 		<!-- ROW: r50 -->
 		<tr>
 			<td align="center">ResNet50</td>
-			<td align="center">1.55</td>
-			<td align="center">17.92</td>
 			<td align="center">81.16</td>
 			<td align="center">54.54</td>
 			<td align="center">43.61</td>
@@ -95,4 +80,3 @@ There are some difference between this implementation and official implementatio
 	</tbody>
 </table>
 
-`*` means that is for Features Extractor training stage, without `*` means that is for Model training stage.

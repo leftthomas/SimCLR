@@ -25,20 +25,9 @@ def get_shuffle_idx(batch_size):
     return shuffle_value, reverse_idx
 
 
-def initialize_queue(model_k, train_loader):
-    queue = torch.zeros((0, features_dim), dtype=torch.float).to('cuda')
-
-    for data, target in train_loader:
-        x_k = data[1].to('cuda')
-        k = model_k(x_k).detach()
-        queue = utils.queue_data(queue, k)
-        queue = utils.dequeue_data(queue, dictionary_size)
-        break
-    return queue
-
-
-def train(model_q, model_k, train_loader, queue, optimizer, epoch, temp=0.07):
+def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
     model_q.train()
+    queue = torch.zeros((0, features_dim), dtype=torch.float).to('cuda')
     total_loss, n_data, train_bar = 0, 0, tqdm(train_loader)
     for data, target in train_bar:
         x_q, x_k = data
@@ -53,25 +42,26 @@ def train(model_q, model_k, train_loader, queue, optimizer, epoch, temp=0.07):
         k = model_k(x_k)
         k = k[reverse_idx.to('cuda')].detach()
 
-        l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
-        l_neg = torch.mm(q.view(N, -1), queue.T.view(-1, K))
+        if K >= dictionary_size:
+            l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
+            l_neg = torch.mm(q.view(N, -1), queue.T.view(-1, K))
 
-        logits = torch.cat([l_pos.view(N, 1), l_neg], dim=1)
-        labels = torch.zeros(N, dtype=torch.long).to('cuda')
-        loss = cross_entropy_loss(logits / temp, labels)
+            logits = torch.cat([l_pos.view(N, 1), l_neg], dim=1)
+            labels = torch.zeros(N, dtype=torch.long).to('cuda')
+            loss = cross_entropy_loss(logits / temp, labels)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-        n_data += N
-        total_loss += loss.item() * N
+            n_data += N
+            total_loss += loss.item() * N
 
-        utils.momentum_update(model_q, model_k)
+            utils.momentum_update(model_q, model_k)
+            train_bar.set_description('Train Epoch: [{}/{}] Loss: {:.6f}'.format(epoch, epochs, total_loss / n_data))
 
         queue = utils.queue_data(queue, k)
         queue = utils.dequeue_data(queue, dictionary_size)
-        train_bar.set_description('Train Epoch: [{}/{}] Loss: {:.6f}'.format(epoch, epochs, total_loss / n_data))
 
     return total_loss / n_data
 
@@ -130,11 +120,9 @@ if __name__ == '__main__':
     cross_entropy_loss = nn.CrossEntropyLoss()
     results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}
 
-    queue = initialize_queue(model_k, train_loader)
-
     best_acc = 0
     for epoch in range(1, epochs + 1):
-        current_loss = train(model_q, model_k, train_loader, queue, optimizer, epoch)
+        current_loss = train(model_q, model_k, train_loader, optimizer, epoch)
         results['train_loss'].append(current_loss)
         current_acc_1, current_acc_5 = test(model_q, train_test_loader, test_loader, epoch)
         results['test_acc@1'].append(current_acc_1)

@@ -73,11 +73,11 @@ def test(model, train_loader, test_loader, epoch):
     test_bar = tqdm(test_loader)
     with torch.no_grad():
         for data, target in train_bar:
-            memory_bank.append(model(data.to('cuda')).cpu())
+            memory_bank.append(model(data.to('cuda')))
         memory_bank = torch.cat(memory_bank).t().contiguous()
-        memory_bank_labels = torch.tensor(train_loader.dataset.targets)
+        memory_bank_labels = torch.tensor(train_loader.dataset.targets).to('cuda')
         for data, target in test_bar:
-            y = model(data.to('cuda')).cpu()
+            y = model(data.to('cuda'))
             n_data += len(data)
             sim_index = torch.mm(y, memory_bank).argsort(dim=-1, descending=True)[:, :min(memory_bank.size(-1), 200)]
             sim_labels = torch.index_select(memory_bank_labels, dim=-1, index=sim_index.reshape(-1)).view(len(data), -1)
@@ -85,8 +85,10 @@ def test(model, train_loader, test_loader, epoch):
             for sim_label in sim_labels:
                 pred_labels.append(torch.histc(sim_label.float(), bins=len(train_loader.dataset.classes)))
             pred_labels = torch.stack(pred_labels).argsort(dim=-1, descending=True)
-            total_top1 += torch.sum((pred_labels[:, :1] == target.unsqueeze(dim=-1)).any(dim=-1).float()).item()
-            total_top5 += torch.sum((pred_labels[:, :5] == target.unsqueeze(dim=-1)).any(dim=-1).float()).item()
+            total_top1 += torch.sum(
+                (pred_labels[:, :1] == target.to('cuda').unsqueeze(dim=-1)).any(dim=-1).float()).cpu().item()
+            total_top5 += torch.sum(
+                (pred_labels[:, :5] == target.to('cuda').unsqueeze(dim=-1)).any(dim=-1).float()).cpu().item()
             test_bar.set_description('Test Epoch: [{}/{}] Acc@1:{:.2f}% Acc@5:{:.2f}%'
                                      .format(epoch, epochs, total_top1 / n_data * 100, total_top5 / n_data * 100))
 

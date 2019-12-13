@@ -66,35 +66,6 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
     return total_loss / n_data
 
 
-def test(model, train_loader, test_loader, epoch):
-    model.eval()
-    total_top1, total_top5, n_data, memory_bank = 0, 0, 0, []
-    train_bar = tqdm(train_loader, desc='Feature extracting')
-    test_bar = tqdm(test_loader)
-    with torch.no_grad():
-        for data, target in train_bar:
-            memory_bank.append(model(data.to('cuda')))
-        memory_bank = torch.cat(memory_bank).t().contiguous()
-        memory_bank_labels = torch.tensor(train_loader.dataset.targets).to('cuda')
-        for data, target in test_bar:
-            y = model(data.to('cuda'))
-            n_data += len(data)
-            sim_index = torch.mm(y, memory_bank).argsort(dim=-1, descending=True)[:, :min(memory_bank.size(-1), 200)]
-            sim_labels = torch.index_select(memory_bank_labels, dim=-1, index=sim_index.reshape(-1)).view(len(data), -1)
-            pred_labels = []
-            for sim_label in sim_labels:
-                pred_labels.append(torch.histc(sim_label.float(), bins=len(train_loader.dataset.classes)))
-            pred_labels = torch.stack(pred_labels).argsort(dim=-1, descending=True)
-            total_top1 += torch.sum(
-                (pred_labels[:, :1] == target.to('cuda').unsqueeze(dim=-1)).any(dim=-1).float()).cpu().item()
-            total_top5 += torch.sum(
-                (pred_labels[:, :5] == target.to('cuda').unsqueeze(dim=-1)).any(dim=-1).float()).cpu().item()
-            test_bar.set_description('Test Epoch: [{}/{}] Acc@1:{:.2f}% Acc@5:{:.2f}%'
-                                     .format(epoch, epochs, total_top1 / n_data * 100, total_top5 / n_data * 100))
-
-    return total_top1 / n_data * 100, total_top5 / n_data * 100
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train MoCo')
     parser.add_argument('--data_path', type=str, default='/home/data/imagenet/ILSVRC2012', help='Path to dataset')
@@ -108,12 +79,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     batch_size, epochs, features_dim, data_path = args.batch_size, args.epochs, args.features_dim, args.data_path
     dictionary_size, model_type = args.dictionary_size, args.model_type
-    train_data = datasets.CIFAR10(root='data', train=True, transform=utils.train_transform, download=True)
+    train_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'train'), transform=utils.train_transform)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
-    train_test_data = datasets.CIFAR10(root='data', train=True, transform=utils.test_transform, download=True)
-    train_test_loader = DataLoader(train_test_data, batch_size=batch_size, shuffle=False, num_workers=8)
-    test_data = datasets.CIFAR10(root='data', train=False, transform=utils.test_transform, download=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8)
 
     model_q = Net(model_type, features_dim).to('cuda')
     model_k = Net(model_type, features_dim).to('cuda')
@@ -122,20 +89,18 @@ if __name__ == '__main__':
     print("# trainable parameters:", sum(param.numel() if param.requires_grad else 0 for param in model_q.parameters()))
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(epochs * 0.6), int(epochs * 0.8)], gamma=0.1)
     cross_entropy_loss = nn.CrossEntropyLoss()
-    results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}
+    results = {'train_loss': []}
 
-    best_acc = 0
+    min_loss = float('inf')
     for epoch in range(1, epochs + 1):
         current_loss = train(model_q, model_k, train_loader, optimizer, epoch)
         results['train_loss'].append(current_loss)
-        current_acc_1, current_acc_5 = test(model_q, train_test_loader, test_loader, epoch)
-        results['test_acc@1'].append(current_acc_1)
-        results['test_acc@5'].append(current_acc_5)
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
-        data_frame.to_csv('results/{}_{}_{}_results.csv'.format(model_type, features_dim, dictionary_size),
-                          index_label='epoch')
+        data_frame.to_csv('results/features_extractor_{}_{}_{}_results.csv'
+                          .format(model_type, features_dim, dictionary_size), index_label='epoch')
         lr_scheduler.step(epoch)
-        if current_acc_1 > best_acc:
-            best_acc = current_acc_1
-            torch.save(model_q.state_dict(), 'epochs/{}_{}_{}.pth'.format(model_type, features_dim, dictionary_size))
+        if current_loss < min_loss:
+            min_loss = current_loss
+            torch.save(model_q.state_dict(), 'epochs/features_extractor_{}_{}_{}.pth'
+                       .format(model_type, features_dim, dictionary_size))

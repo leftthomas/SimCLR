@@ -68,10 +68,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data_path, batch_size, epochs, model_path = args.data_path, args.batch_size, args.epochs, args.model
     model_type, features_dim = model_path.split('_')[-3], int(model_path.split('_')[-2])
-    train_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'train'), transform=utils.train_transform)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8)
-    test_data = datasets.ImageFolder(root='{}/{}'.format(data_path, 'val'), transform=utils.test_transform)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8)
+    train_data = datasets.CIFAR10(root='data', train=True, transform=utils.train_transform, download=True)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    test_data = datasets.CIFAR10(root='data', train=False, transform=utils.test_transform, download=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     features_extractor = Net(model_type, features_dim)
     features_extractor.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     model = nn.Sequential(OrderedDict(
         [('features_extractor', features_extractor), ('classifier', nn.Linear(features_dim, len(train_data.classes)))]))
     model = model.to('cuda')
-    optimizer = optim.SGD(model.classifier.parameters(), lr=30, momentum=0.9, weight_decay=0)
+    optimizer = optim.Adam(model.classifier.parameters(), lr=1e-3)
     cross_entropy_loss = nn.CrossEntropyLoss()
     print("# trainable parameters:", sum(param.numel() if param.requires_grad else 0 for param in model.parameters()))
     results = {'train_loss': [], 'train_acc': [], 'test_loss': [], 'test_acc@1': [], 'test_acc@5': []}

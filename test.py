@@ -20,8 +20,9 @@ def train(model, train_loader, optimizer, epoch):
     model.train()
     total_loss, total_true, n_data, train_bar = 0, 0, 0, tqdm(train_loader)
     for data, target in train_bar:
-        y = model(data.to('cuda'))
-        loss = cross_entropy_loss(y, target.to('cuda'))
+        data, target = data.to('cuda'), target.to('cuda')
+        y = model(data)
+        loss = cross_entropy_loss(y, target)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -41,8 +42,9 @@ def test(model, test_loader, epoch):
     total_loss, total_top1, total_top5, n_data, test_bar = 0, 0, 0, 0, tqdm(test_loader)
     with torch.no_grad():
         for data, target in test_bar:
-            y = model(data.to('cuda'))
-            loss = cross_entropy_loss(y, target.to('cuda'))
+            data, target = data.to('cuda'), target.to('cuda')
+            y = model(data)
+            loss = cross_entropy_loss(y, target)
             n_data += len(data)
             total_loss += loss.item() * len(data)
             total_top1 += torch.sum((torch.topk(y, k=1, dim=-1)[1] == target.unsqueeze(dim=-1)).any(

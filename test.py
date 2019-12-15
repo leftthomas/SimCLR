@@ -20,17 +20,16 @@ def train(model, train_loader, optimizer, epoch):
     model.train()
     total_loss, total_true, n_data, train_bar = 0, 0, 0, tqdm(train_loader)
     for data, target in train_bar:
-        x, _ = data
-        y = model(x.to('cuda'))
+        y = model(data.to('cuda'))
         loss = cross_entropy_loss(y, target.to('cuda'))
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        n_data += len(x)
-        total_loss += loss.item() * len(x)
+        n_data += len(data)
+        total_loss += loss.item() * len(data)
         pred = torch.argmax(y, dim=-1)
-        total_true += torch.sum((pred.cpu() == target).float()).item()
+        total_true += torch.sum((pred == target).float()).cpu().item()
         train_bar.set_description('Train Epoch: [{}/{}] Loss: {:.6f} Acc:{:.2f}%'
                                   .format(epoch, epochs, total_loss / n_data, total_true / n_data * 100))
 
@@ -46,10 +45,10 @@ def test(model, test_loader, epoch):
             loss = cross_entropy_loss(y, target.to('cuda'))
             n_data += len(data)
             total_loss += loss.item() * len(data)
-            total_top1 += torch.sum((torch.topk(y, k=1, dim=-1)[1].cpu() == target.unsqueeze(dim=-1)).any(
-                dim=-1).float()).item()
-            total_top5 += torch.sum((torch.topk(y, k=5, dim=-1)[1].cpu() == target.unsqueeze(dim=-1)).any(
-                dim=-1).float()).item()
+            total_top1 += torch.sum((torch.topk(y, k=1, dim=-1)[1] == target.unsqueeze(dim=-1)).any(
+                dim=-1).float()).cpu().item()
+            total_top5 += torch.sum((torch.topk(y, k=5, dim=-1)[1] == target.unsqueeze(dim=-1)).any(
+                dim=-1).float()).cpu().item()
             test_bar.set_description('Test Epoch: [{}/{}] Loss: {:.6f} Acc@1:{:.2f}% Acc@5:{:.2f}%'
                                      .format(epoch, epochs, total_loss / n_data, total_top1 / n_data * 100,
                                              total_top5 / n_data * 100))

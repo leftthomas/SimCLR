@@ -134,9 +134,10 @@ if __name__ == '__main__':
         results['test_acc@5'].append(current_acc_5)
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
-        data_frame.to_csv('results/{}_{}_{}_results.csv'.format(model_type, features_dim, dictionary_size),
-                          index_label='epoch')
+        data_frame.to_csv('results/features_extractor_{}_{}_{}_results.csv'
+                          .format(model_type, features_dim, dictionary_size), index_label='epoch')
         lr_scheduler.step(epoch)
         if current_acc_1 > best_acc:
             best_acc = current_acc_1
-            torch.save(model_q.state_dict(), 'epochs/{}_{}_{}.pth'.format(model_type, features_dim, dictionary_size))
+            torch.save(model_q.state_dict(), 'epochs/features_extractor_{}_{}_{}.pth'
+                       .format(model_type, features_dim, dictionary_size))

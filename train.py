@@ -16,21 +16,21 @@ from model import Net
 warnings.filterwarnings("ignore")
 
 
-def get_shuffle_idx(batch_size):
+def get_shuffle_idx(num_data):
     """shuffle index for ShuffleBN """
-    shuffle_value = torch.randperm(batch_size).long()
-    reverse_idx = torch.zeros(batch_size).long()
-    arrange_index = torch.arange(batch_size).long()
+    shuffle_value = torch.randperm(num_data)
+    reverse_idx = torch.zeros(num_data).long()
+    arrange_index = torch.arange(num_data)
     reverse_idx.index_copy_(0, shuffle_value, arrange_index)
     return shuffle_value, reverse_idx
 
 
 def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
     model_q.train()
-    queue = torch.zeros((0, features_dim), dtype=torch.float).to('cuda')
     total_loss, n_data, train_bar = 0, 0, tqdm(train_loader)
+    queue = torch.zeros((0, features_dim)).to('cuda')
     for data, target in train_bar:
-        x_q, x_k = data
+        x_q, x_k = data, data.clone().detach()
         x_q, x_k = x_q.to('cuda'), x_k.to('cuda')
         N, K = x_q.shape[0], queue.shape[0]
 
@@ -39,14 +39,14 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
         # shuffle BN
         shuffle_idx, reverse_idx = get_shuffle_idx(N)
         x_k = x_k[shuffle_idx.to('cuda')]
-        k = model_k(x_k)
-        k = k[reverse_idx.to('cuda')].detach()
+        k = model_k(x_k).detach()
+        k = k[reverse_idx.to('cuda')]
 
         if K >= dictionary_size:
             l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
-            l_neg = torch.mm(q.view(N, -1), queue.detach().t().view(-1, K).contiguous())
+            l_neg = torch.mm(q, queue.t().contiguous())
 
-            logits = torch.cat([l_pos.view(N, 1), l_neg], dim=1)
+            logits = torch.cat([l_pos.view(N, 1), l_neg], dim=-1)
             labels = torch.zeros(N, dtype=torch.long).to('cuda')
             loss = cross_entropy_loss(logits / temp, labels)
 
@@ -69,8 +69,7 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
 def test(model, train_loader, test_loader, epoch):
     model.eval()
     total_top1, total_top5, n_data, memory_bank = 0, 0, 0, []
-    train_bar = tqdm(train_loader, desc='Feature extracting')
-    test_bar = tqdm(test_loader)
+    train_bar, test_bar = tqdm(train_loader, desc='Feature extracting'), tqdm(test_loader)
     with torch.no_grad():
         for data, target in train_bar:
             memory_bank.append(model(data.to('cuda')))
@@ -109,7 +108,7 @@ if __name__ == '__main__':
     batch_size, epochs, features_dim, data_path = args.batch_size, args.epochs, args.features_dim, args.data_path
     dictionary_size, model_type = args.dictionary_size, args.model_type
     train_data = datasets.CIFAR10(root='data', train=True, transform=utils.train_transform, download=True)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8, drop_last=True)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8)
     train_test_data = datasets.CIFAR10(root='data', train=True, transform=utils.test_transform, download=True)
     train_test_loader = DataLoader(train_test_data, batch_size=batch_size, shuffle=False, num_workers=8)
     test_data = datasets.CIFAR10(root='data', train=False, transform=utils.test_transform, download=True)
@@ -117,6 +116,8 @@ if __name__ == '__main__':
 
     model_q = Net(model_type, features_dim).to('cuda')
     model_k = Net(model_type, features_dim).to('cuda')
+    for param in model_k.parameters():
+        param.requires_grad = False
     utils.momentum_update(model_q, model_k, beta=0.0)
     optimizer = optim.SGD(model_q.parameters(), lr=0.03, momentum=0.9, weight_decay=0.0001)
     print("# trainable parameters:", sum(param.numel() if param.requires_grad else 0 for param in model_q.parameters()))

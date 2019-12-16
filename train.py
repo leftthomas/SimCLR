@@ -68,13 +68,14 @@ def test(model, train_data_loader, test_data_loader):
     with torch.no_grad():
         for data, target in train_bar:
             memory_bank.append(model(data.to('cuda')))
-        memory_bank = torch.cat(memory_bank).t().contiguous()
+        memory_bank = torch.cat(memory_bank)
         memory_bank_labels = torch.tensor(train_data_loader.dataset.targets).to('cuda')
         for data, target in test_bar:
             data, target = data.to('cuda'), target.to('cuda')
             y = model(data)
             total_num += len(data)
-            sim_index = torch.mm(y, memory_bank).argsort(dim=-1, descending=True)[:, :min(memory_bank.size(-1), 200)]
+            sim_matrix = (y[:, None, None, :] @ memory_bank[None, :, :, None]).squeeze(dim=-1).squeeze(dim=-1)
+            sim_index = sim_matrix.argsort(dim=-1, descending=True)[:, :min(sim_matrix.size(-1), 200)]
             sim_labels = torch.index_select(memory_bank_labels, dim=-1, index=sim_index.reshape(-1)).view(len(data), -1)
             pred_labels = []
             for sim_label in sim_labels:

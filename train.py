@@ -22,9 +22,9 @@ def get_shuffle_idx(num_data):
     return shuffle_value, reverse_idx
 
 
-def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
-    model_q.train()
-    total_loss, n_data, train_bar = 0.0, 0, tqdm(train_loader)
+def train(f_q, f_k, data_loader, train_optimizer, temp=0.07):
+    f_q.train()
+    total_loss, total_num, train_bar = 0.0, 0, tqdm(data_loader)
     queue = torch.zeros((0, features_dim)).to('cuda')
     for data, target in train_bar:
         x_q, x_k = data, data.clone().detach()
@@ -34,12 +34,12 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
         # shuffle BN
         shuffle_idx, reverse_idx = get_shuffle_idx(N)
         x_k = x_k[shuffle_idx.to('cuda')]
-        k = model_k(x_k).detach()
+        k = f_k(x_k).detach()
         k = k[reverse_idx.to('cuda')]
 
         if K >= dictionary_size:
-            optimizer.zero_grad()
-            q = model_q(x_q)
+            train_optimizer.zero_grad()
+            q = f_q(x_q)
             l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
             l_neg = torch.mm(q, queue.t().contiguous())
 
@@ -47,45 +47,46 @@ def train(model_q, model_k, train_loader, optimizer, epoch, temp=0.07):
             labels = torch.zeros(N, dtype=torch.long).to('cuda')
             loss = cross_entropy_loss(logits / temp, labels)
             loss.backward()
-            optimizer.step()
+            train_optimizer.step()
 
-            n_data += N
+            total_num += N
             total_loss += loss.item() * N
 
-            utils.momentum_update(model_q, model_k)
-            train_bar.set_description('Train Epoch: [{}/{}] Loss: {:.6f}'.format(epoch, epochs, total_loss / n_data))
+            utils.momentum_update(f_q, f_k)
+            train_bar.set_description('Train Epoch: [{}/{}] Loss: {:.6f}'.format(epoch, epochs, total_loss / total_num))
 
         queue = utils.queue_data(queue, k)
         queue = utils.dequeue_data(queue, dictionary_size)
 
-    return total_loss / n_data
+    return total_loss / total_num
 
 
-def test(model, train_loader, test_loader, epoch):
+def test(model, train_data_loader, test_data_loader):
     model.eval()
-    total_top1, total_top5, n_data, memory_bank = 0.0, 0.0, 0, []
-    train_bar, test_bar = tqdm(train_loader, desc='Feature extracting'), tqdm(test_loader)
+    total_top1, total_top5, total_num, memory_bank = 0.0, 0.0, 0, []
+    train_bar, test_bar = tqdm(train_data_loader, desc='Feature extracting'), tqdm(test_data_loader)
     with torch.no_grad():
         for data, target in train_bar:
             memory_bank.append(model(data.to('cuda')))
         memory_bank = torch.cat(memory_bank).t().contiguous()
-        memory_bank_labels = torch.tensor(train_loader.dataset.targets).to('cuda')
+        memory_bank_labels = torch.tensor(train_data_loader.dataset.targets).to('cuda')
         for data, target in test_bar:
             data, target = data.to('cuda'), target.to('cuda')
             y = model(data)
-            n_data += len(data)
+            total_num += len(data)
             sim_index = torch.mm(y, memory_bank).argsort(dim=-1, descending=True)[:, :min(memory_bank.size(-1), 200)]
             sim_labels = torch.index_select(memory_bank_labels, dim=-1, index=sim_index.reshape(-1)).view(len(data), -1)
             pred_labels = []
             for sim_label in sim_labels:
-                pred_labels.append(torch.histc(sim_label.float(), bins=len(train_loader.dataset.classes)))
+                pred_labels.append(torch.histc(sim_label.float(), bins=len(train_data_loader.dataset.classes),
+                                               max=len(train_data_loader.dataset.classes)))
             pred_labels = torch.stack(pred_labels).argsort(dim=-1, descending=True)
             total_top1 += torch.sum((pred_labels[:, :1] == target.unsqueeze(dim=-1)).any(dim=-1).float()).item()
             total_top5 += torch.sum((pred_labels[:, :5] == target.unsqueeze(dim=-1)).any(dim=-1).float()).item()
             test_bar.set_description('Test Epoch: [{}/{}] Acc@1:{:.2f}% Acc@5:{:.2f}%'
-                                     .format(epoch, epochs, total_top1 / n_data * 100, total_top5 / n_data * 100))
+                                     .format(epoch, epochs, total_top1 / total_num * 100, total_top5 / total_num * 100))
 
-    return total_top1 / n_data * 100, total_top5 / n_data * 100
+    return total_top1 / total_num * 100, total_top5 / total_num * 100
 
 
 if __name__ == '__main__':
@@ -120,9 +121,9 @@ if __name__ == '__main__':
 
     best_acc = 0.0
     for epoch in range(1, epochs + 1):
-        current_loss = train(model_q, model_k, train_loader, optimizer, epoch)
+        current_loss = train(model_q, model_k, train_loader, optimizer)
         results['train_loss'].append(current_loss)
-        current_acc_1, current_acc_5 = test(model_q, train_test_loader, test_loader, epoch)
+        current_acc_1, current_acc_5 = test(model_q, train_test_loader, test_loader)
         results['test_acc@1'].append(current_acc_1)
         results['test_acc@5'].append(current_acc_5)
         # save statistics

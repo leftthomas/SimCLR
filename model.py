@@ -10,6 +10,8 @@ class Net(nn.Module):
             self.features_extractor, expand = resnet18(), 1
         else:
             self.features_extractor, expand = resnet50(), 4
+        self.features_extractor.conv1 = nn.Conv2d(3, self.features_extractor.inplanes, kernel_size=3, stride=1,
+                                                  padding=1, bias=False)
         self.features_extractor.fc = nn.Linear(512 * expand, features_dim)
 
     def forward(self, x):

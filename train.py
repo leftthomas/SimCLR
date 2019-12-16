@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_type', default='resnet18', type=str,
                         choices=['resnet18', 'resnet50'], help='Backbone type')
     parser.add_argument('--batch_size', type=int, default=256, help='Number of images in each mini-batch')
-    parser.add_argument('--epochs', type=int, default=200, help='Number of sweeps over the dataset to train')
+    parser.add_argument('--epochs', type=int, default=100, help='Number of sweeps over the dataset to train')
     parser.add_argument('--features_dim', type=int, default=128, help='Dim of features for each image')
     parser.add_argument('--dictionary_size', type=int, default=4096, help='Size of dictionary')
 

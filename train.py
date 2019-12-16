@@ -79,7 +79,7 @@ def test(model, train_data_loader, test_data_loader):
             pred_labels = []
             for sim_label in sim_labels:
                 pred_labels.append(torch.histc(sim_label.float(), bins=len(train_data_loader.dataset.classes),
-                                               max=len(train_data_loader.dataset.classes)))
+                                               max=len(train_data_loader.dataset.classes) - 1))
             pred_labels = torch.stack(pred_labels).argsort(dim=-1, descending=True)
             total_top1 += torch.sum((pred_labels[:, :1] == target.unsqueeze(dim=-1)).any(dim=-1).float()).item()
             total_top5 += torch.sum((pred_labels[:, :5] == target.unsqueeze(dim=-1)).any(dim=-1).float()).item()

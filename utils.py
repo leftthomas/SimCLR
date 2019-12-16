@@ -4,17 +4,13 @@ from torchvision import transforms
 
 train_transform = transforms.Compose([
     transforms.RandomResizedCrop(64, scale=(0.8, 1.2), ratio=(0.8, 1.2)),
-    transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.2)], p=0.8),
     transforms.RandomHorizontalFlip(),
-    transforms.RandomGrayscale(p=0.25),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+    transforms.ToTensor()])
 
 test_transform = transforms.Compose([
     transforms.Resize(64),
     transforms.CenterCrop(64),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])])
+    transforms.ToTensor()])
 
 
 def queue_data(data, k):

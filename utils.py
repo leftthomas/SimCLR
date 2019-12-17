@@ -7,12 +7,9 @@ train_transform = transforms.Compose([
     transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.2)], p=0.8),
     transforms.RandomHorizontalFlip(),
     transforms.RandomGrayscale(p=0.25),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    transforms.ToTensor()])
 
-test_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+test_transform = transforms.Compose([transforms.ToTensor()])
 
 
 def queue_data(data, k):

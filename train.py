@@ -40,10 +40,10 @@ def train(f_q, f_k, data_loader, train_optimizer, temp=0.07):
         if K >= dictionary_size:
             train_optimizer.zero_grad()
             q = f_q(x_q)
-            l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1))
+            l_pos = torch.bmm(q.view(N, 1, -1), k.view(N, -1, 1)).view(N, 1)
             l_neg = torch.mm(q, queue.t().contiguous())
 
-            logits = torch.cat([l_pos.view(N, 1), l_neg], dim=-1)
+            logits = torch.cat([l_pos, l_neg], dim=-1)
             labels = torch.zeros(N, dtype=torch.long).to('cuda')
             loss = cross_entropy_loss(logits / temp, labels)
             loss.backward()
@@ -72,9 +72,9 @@ def test(model, train_data_loader, test_data_loader):
         memory_bank_labels = torch.tensor(train_data_loader.dataset.targets).to('cuda')
         for data, target in test_bar:
             data, target = data.to('cuda'), target.to('cuda')
-            y = model(data)
+            output = model(data)
             total_num += len(data)
-            sim_matrix = (y[:, None, None, :] @ memory_bank[None, :, :, None]).squeeze(dim=-1).squeeze(dim=-1)
+            sim_matrix = torch.mm(output, memory_bank.t().contiguous())
             sim_index = sim_matrix.argsort(dim=-1, descending=True)[:, :min(sim_matrix.size(-1), 200)]
             sim_labels = torch.index_select(memory_bank_labels, dim=-1, index=sim_index.reshape(-1)).view(len(data), -1)
             pred_labels = []
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=256, help='Number of images in each mini-batch')
     parser.add_argument('--epochs', type=int, default=100, help='Number of sweeps over the dataset to train')
     parser.add_argument('--features_dim', type=int, default=128, help='Dim of features for each image')
-    parser.add_argument('--dictionary_size', type=int, default=4096, help='Size of dictionary')
+    parser.add_argument('--dictionary_size', type=int, default=10, help='Size of dictionary')
 
     args = parser.parse_args()
     model_type, batch_size, epochs, features_dim = args.model_type, args.batch_size, args.epochs, args.features_dim

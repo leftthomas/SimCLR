@@ -109,7 +109,7 @@ def test(net, memory_data_loader, test_data_loader):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train Shadow Mode')
+    parser = argparse.ArgumentParser(description='Train MVC')
     parser.add_argument('--model_type', default='resnet18', type=str,
                         choices=['resnet18', 'resnet34', 'resnet50', 'resnext50_32x4d'], help='Backbone type')
     parser.add_argument('--share_type', default='layer1', type=str,
@@ -122,6 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--top_k', default=200, type=int, help='Top k most similar images used to predict the label')
     parser.add_argument('--batch_size', default=128, type=int, help='Number of images in each mini-batch')
     parser.add_argument('--epochs', default=200, type=int, help='Number of sweeps over the dataset to train')
+    parser.add_argument('--with_random', action='store_true', help='With branch random weight or not')
     parser.add_argument('--gpu_ids', default='0,1,2,3,4,5,6,7', type=str, help='Selected gpu ids to use')
 
     # args parse
@@ -129,7 +130,7 @@ if __name__ == '__main__':
     model_type, share_type, ensemble_size = args.model_type, args.share_type, args.ensemble_size
     feature_dim, negative_num, temperature = args.feature_dim, args.negative_num, args.temperature
     momentum, top_k, batch_size, epochs = args.momentum, args.top_k, args.batch_size, args.epochs
-    gpu_ids = [int(gpu) for gpu in args.gpu_ids.split(',')]
+    with_random, gpu_ids = args.with_random, [int(gpu) for gpu in args.gpu_ids.split(',')]
 
     # data prepare
     train_data = utils.CIFAR10Instance(root='data', train=True, transform=utils.train_transform, download=True)
@@ -140,7 +141,7 @@ if __name__ == '__main__':
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
 
     # model setup and optimizer config
-    model = nn.DataParallel(Model(ensemble_size, feature_dim, model_type, share_type).to(gpu_ids[0]),
+    model = nn.DataParallel(Model(model_type, share_type, ensemble_size, feature_dim, with_random).to(gpu_ids[0]),
                             device_ids=gpu_ids)
     optimizer = optim.SGD(model.parameters(), lr=0.03, momentum=0.9, weight_decay=5e-4)
     print("# trainable model parameters:", sum(param.numel() if param.requires_grad else 0
@@ -155,7 +156,7 @@ if __name__ == '__main__':
 
     # training loop
     results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}
-    save_name_pre = 'cifar10_{}_{}_{}_{}'.format(model_type, share_type, ensemble_size, feature_dim)
+    save_name_pre = 'cifar10_{}_{}_{}_{}_{}'.format(model_type, share_type, ensemble_size, feature_dim, with_random)
     best_acc = 0.0
     for epoch in range(1, epochs + 1):
         train_loss = train(model, train_loader, optimizer)

@@ -1,5 +1,5 @@
-# MoCo
-A PyTorch implementation of MoCo based on the paper [Momentum Contrast for Unsupervised Visual Representation Learning](https://arxiv.org/abs/1911.05722).
+# MVC
+A PyTorch implementation of MVC based on the paper [Multi View Combination for Unsupervised Visual Representation Learning]().
 
 ## Requirements
 - [Anaconda](https://www.anaconda.com/download/)
@@ -9,44 +9,34 @@ conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
 ```
 
 ## Dataset
-`ILSVRC2012` dataset is used in this repo, the dataset should be downloaded from [ImageNet](http://image-net.org/challenges/LSVRC/2012/)
-and extracted as following:
-```
-{data_root}/
-  train/
-    n01693334/
-      # JPEG files 
-    n02018207/
-    ......
-    n04286575/
-    n04596742/
-  val/
-    n01693334/
-      # JPEG files 
-    n02018207/
-    ......
-    n04286575/
-    n04596742/
-```
+`CIFAR10` dataset is used in this repo, the dataset will be downloaded by `PyTorch` automatically.
 
 ## Usage
+### Train Features Extractor
+```
+python train.py --epochs 50 --load_ids
+optional arguments:
+--model_type                  Backbone type [default value is 'resnet18'] (choices=['resnet18', 'resnet34', 'resnet50', 'resnext50_32x4d'])
+--share_type                  Shared module type [default value is 'layer1'] (choices=['none', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4'])
+--batch_size                  Number of images in each mini-batch [default value is 256]
+--epochs                      Number of sweeps over the dataset to train [default value is 100]
+--ensemble_size               Ensemble model size [default value is 32]
+--meta_class_size             Meta class size [default value is 4]
+--gpu_ids                     Selected gpu [default value is '0,1,2,3,4,5,6,7']
+--load_ids                    Load already generated ids or not [default value is False]
+```
+
 ### Train Model
 ```
-python train.py --epochs 50 --dictionary_size 4096
+python test.py --epochs 200 --batch_size 128
 optional arguments:
---data_path                   Path to dataset [default value is '/home/data/imagenet/ILSVRC2012']
---model_type                  Backbone type [default value is 'resnet18'] (choices=['resnet18', 'resnet50'])
 --batch_size                  Number of images in each mini-batch [default value is 256]
---epochs                      Number of sweeps over the dataset to train [default value is 200]
---features_dim                Dim of features for each image [default value is 128]
---dictionary_size             Size of dictionary [default value is 65536]
+--epochs                      Number of sweeps over the dataset to train [default value is 100]
+--data_path                   Features extractor file [default value is 'epochs/cifar10_resnet18_layer1_32_4_features_extractor.pth']
+--gpu_ids                     Selected gpu [default value is '0,1,2,3,4,5,6,7']
 ```
 
 ## Results
-There are some difference between this implementation and official implementation:
-1. The `batch size` is `256` for `resnet18` backbone, `128` for `resnet50` backbone;
-2. The testing stage uses `KNN` to predict the labels as 
-[Unsupervised Feature Learning via Non-Parametric Instance Discrimination](https://arxiv.org/abs/1805.01978) described.
 
 <table>
 	<tbody>

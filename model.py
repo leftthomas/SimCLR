@@ -1,5 +1,3 @@
-import math
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,7 +5,7 @@ from torchvision.models.resnet import resnet18, resnet34, resnet50, resnext50_32
 
 
 class Model(nn.Module):
-    def __init__(self, ensemble_size, feature_dim, model_type, share_type):
+    def __init__(self, model_type, share_type, ensemble_size, feature_dim, with_random):
         super(Model, self).__init__()
 
         # backbone
@@ -17,13 +15,7 @@ class Model(nn.Module):
         module_names = ['conv1', 'bn1', 'relu', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4']
 
         # configs
-        self.ensemble_size, self.feature_dim = ensemble_size, feature_dim
-        if share_type == 'none' or module_names.index(share_type) <= 2:
-            self.stride = 16
-        elif module_names.index(share_type) in [3, 4]:
-            self.stride = 8
-        elif module_names.index(share_type) >= 5:
-            self.stride = 8 / (2 ** (module_names.index(share_type) - 4))
+        self.ensemble_size, self.feature_dim, self.with_random = ensemble_size, feature_dim, with_random
 
         # common features
         self.common_extractor = []
@@ -32,16 +24,12 @@ class Model(nn.Module):
             if name in common_module_names:
                 if name == 'conv1':
                     module = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+                if name == 'maxpool':
+                    continue
                 self.common_extractor.append(module)
         self.common_extractor = nn.Sequential(*self.common_extractor)
         print("# trainable common feature parameters:",
               sum(param.numel() if param.requires_grad else 0 for param in self.common_extractor.parameters()))
-
-        # branch attention
-        # TODO: How to init attention
-        self.branch_att = nn.Parameter(torch.rand(ensemble_size, self.stride * 2, self.stride * 2), requires_grad=True)
-        std = 1. / math.sqrt((self.stride * 2) ** 2 / 3)
-        nn.init.uniform_(self.branch_att, a=-std, b=std)
 
         # individual features
         self.head, self.layer1, self.layer2, self.layer3, self.layer4 = [], [], [], [], []
@@ -50,7 +38,7 @@ class Model(nn.Module):
         for i in range(ensemble_size):
             heads = []
             for name, module in backbone().named_children():
-                if name in individual_module_names and name in ['conv1', 'bn1', 'relu', 'maxpool']:
+                if name in individual_module_names and name in ['conv1', 'bn1', 'relu']:
                     if name == 'conv1':
                         module = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
                     heads.append(module)
@@ -84,12 +72,15 @@ class Model(nn.Module):
     def forward(self, x):
         batch_size = x.size(0)
         common_feature = self.common_extractor(x)
-        common_feature = F.interpolate(common_feature, size=self.stride * 2, mode='bilinear', align_corners=True)
-        branch_weight = torch.sigmoid(self.branch_att).unsqueeze(dim=0)
+        if self.with_random:
+            branch_weight = torch.rand(self.ensemble_size, device=x.device)
+            branch_weight = F.softmax(branch_weight, dim=-1)
+        else:
+            branch_weight = torch.ones(self.ensemble_size, device=x.device)
 
         out = []
         for i in range(self.ensemble_size):
-            individual_feature = branch_weight[:, i, :, :].unsqueeze(dim=1) * common_feature
+            individual_feature = branch_weight[i] * common_feature
             if len(self.head) != 0:
                 individual_feature = self.head[i](individual_feature)
             if len(self.layer1) != 0:

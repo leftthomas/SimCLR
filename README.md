@@ -1,5 +1,5 @@
 # MVC
-A PyTorch implementation of MVC based on the paper [Multi View Combination for Unsupervised Visual Representation Learning]().
+A PyTorch implementation of MVC based on the paper [Multi-View Combination for Unsupervised Visual Representation Learning]().
 
 ## Requirements
 - [Anaconda](https://www.anaconda.com/download/)

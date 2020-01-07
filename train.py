@@ -134,11 +134,11 @@ if __name__ == '__main__':
 
     # data prepare
     train_data = utils.CIFAR10Instance(root='data', train=True, transform=utils.train_transform, download=True)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=8)
     memory_data = utils.CIFAR10Instance(root='data', train=True, transform=utils.test_transform, download=True)
-    memory_loader = DataLoader(memory_data, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    memory_loader = DataLoader(memory_data, batch_size=batch_size, shuffle=False, num_workers=8)
     test_data = utils.CIFAR10Instance(root='data', train=False, transform=utils.test_transform, download=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=8)
 
     # model setup and optimizer config
     model = nn.DataParallel(Model(model_type, share_type, ensemble_size, feature_dim, with_random).to(gpu_ids[0]),

@@ -39,17 +39,16 @@ def train(net, data_loader, train_optimizer):
         # Monte Carlo approximation ---> [1, E, 1], use the approximation derived from initial batches as z
         if z is None:
             z = out.detach().mean(dim=[0, 2], keepdim=True) * n
-        # [B, E, 1+M]
+        # compute P(i|v) ---> [B, E, 1+M]
         output = out / z
 
         # compute loss
         # TODO: Add branch nce loss
-        # log(p_t/(p_t+M*p_i)) ---> [B, E]
+        # compute log(h(i|v))=log(P(i|v)/(P(i|v)+M*P_n(i))) ---> [B, E]
         p_d = (output.select(dim=-1, index=0) / (output.select(dim=-1, index=0) + m / n)).log()
-        # log(1-p_f/(p_f+M*p_i)) ---> [B, E, M]
-        p_n = ((m / n) / (output.narrow(dim=-1, start=1, length=m)
-                          + m / n)).log()
-        # -E(P_d)-M*E(P_n)
+        # compute log(1-h(i|v'))=log(1-P(i|v')/(P(i|v')+M*P_n(i))) ---> [B, E, M]
+        p_n = ((m / n) / (output.narrow(dim=-1, start=1, length=m) + m / n)).log()
+        # compute J_NCE(θ)=-E(P_d)-M*E(P_n)
         loss = - (p_d.sum() + p_n.sum()) / (data.size(0) * ensemble_size)
         loss.backward()
         train_optimizer.step()

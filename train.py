@@ -56,8 +56,8 @@ def train(net, data_loader, train_optimizer):
 
         # update memory bank ---> [B, E, D]
         pos_samples = samples.select(dim=1, index=0)
-        pos_samples = pos_samples * momentum + features.detach().cpu() * (1.0 - momentum)
-        pos_samples = pos_samples.div(torch.norm(pos_samples, dim=-1, keepdim=True))
+        pos_samples = features.detach().cpu() * momentum + pos_samples * (1.0 - momentum)
+        pos_samples = F.normalize(pos_samples, dim=-1)
         memory_bank.index_copy_(dim=0, index=pos_index, source=pos_samples)
 
         total_num += data.size(0)

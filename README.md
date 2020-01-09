@@ -20,7 +20,7 @@ optional arguments:
 --share_type                  Shared module type [default value is 'layer1'] (choices=['none', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4'])
 --ensemble_size               Ensemble branch size [default value is 8]
 --feature_dim                 Feature dim for each branch [default value is 16]
---negative_num                Negative sample number [default value is 4096]
+--m                           Negative sample number [default value is 4096]
 --temperature                 Temperature used in softmax [default value is 0.1]
 --momentum                    Momentum used for the update of memory bank [default value is 0.5]
 --k                           Top k most similar images used to predict the label [default value is 200]

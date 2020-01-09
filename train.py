@@ -23,11 +23,11 @@ def train(net, data_loader, train_optimizer):
         train_optimizer.zero_grad()
         features = net(data)
 
-        # sample negatives ---> [B, K+1]
-        idx = torch.randint(high=n, size=(data.size(0), negative_num + 1))
+        # sample negatives ---> [B, M+1]
+        idx = torch.randint(high=n, size=(data.size(0), m + 1))
         # make the first sample as positive
         idx[:, 0] = pos_index
-        # select memory vectors from memory bank ---> [B, 1+K, E, D]
+        # select memory vectors from memory bank ---> [B, 1+M, E, D]
         samples = torch.index_select(memory_bank, dim=0, index=idx.view(-1)) \
             .view(data.size(0), -1, ensemble_size, feature_dim)
         # compute cos similarity between each feature vector and memory bank ---> [B, E, 1+K]
@@ -39,17 +39,17 @@ def train(net, data_loader, train_optimizer):
         # Monte Carlo approximation ---> [1, E, 1], use the approximation derived from initial batches as z
         if z is None:
             z = out.detach().mean(dim=[0, 2], keepdim=True) * n
-        # [B, E, 1+K]
+        # [B, E, 1+M]
         output = out / z
 
         # compute loss
         # TODO: Add branch nce loss
-        # log(p_t/(p_t+K*p_i)) ---> [B, E]
-        p_d = (output.select(dim=-1, index=0) / (output.select(dim=-1, index=0) + negative_num / n)).log()
-        # log(1-p_f/(p_f+K*p_i)) ---> [B, E, K]
-        p_n = ((negative_num / n) / (output.narrow(dim=-1, start=1, length=negative_num)
-                                     + negative_num / n)).log()
-        # -E(P_d)-K*E(P_n)
+        # log(p_t/(p_t+M*p_i)) ---> [B, E]
+        p_d = (output.select(dim=-1, index=0) / (output.select(dim=-1, index=0) + m / n)).log()
+        # log(1-p_f/(p_f+M*p_i)) ---> [B, E, M]
+        p_n = ((m / n) / (output.narrow(dim=-1, start=1, length=m)
+                          + m / n)).log()
+        # -E(P_d)-M*E(P_n)
         loss = - (p_d.sum() + p_n.sum()) / (data.size(0) * ensemble_size)
         loss.backward()
         train_optimizer.step()
@@ -119,7 +119,7 @@ if __name__ == '__main__':
                         choices=['none', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4'], help='Shared module type')
     parser.add_argument('--ensemble_size', default=8, type=int, help='Ensemble branch size')
     parser.add_argument('--feature_dim', default=16, type=int, help='Feature dim for each branch')
-    parser.add_argument('--negative_num', default=4096, type=int, help='Negative sample number')
+    parser.add_argument('--m', default=4096, type=int, help='Negative sample number')
     parser.add_argument('--temperature', default=0.1, type=float, help='Temperature used in softmax')
     parser.add_argument('--momentum', default=0.5, type=float, help='Momentum used for the update of memory bank')
     parser.add_argument('--k', default=200, type=int, help='Top k most similar images used to predict the label')
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     # args parse
     args = parser.parse_args()
     model_type, share_type, ensemble_size = args.model_type, args.share_type, args.ensemble_size
-    feature_dim, negative_num, temperature = args.feature_dim, args.negative_num, args.temperature
+    feature_dim, m, temperature = args.feature_dim, args.m, args.temperature
     momentum, k, batch_size, epochs = args.momentum, args.k, args.batch_size, args.epochs
     with_random, gpu_ids = args.with_random, [int(gpu) for gpu in args.gpu_ids.split(',')]
 

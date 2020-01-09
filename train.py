@@ -1,8 +1,8 @@
 import argparse
-import math
 
 import pandas as pd
 import torch
+import torch.nn.functional as F
 import torch.optim as optim
 from torch import nn
 from torch.optim.lr_scheduler import MultiStepLR
@@ -148,11 +148,8 @@ if __name__ == '__main__':
                                                for param in model.parameters()))
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(epochs * 0.6), int(epochs * 0.8)], gamma=0.1)
 
-    # init memory bank as random unit vector
-    # TODO: Figure out why init memory bank like this
-    std = 1. / math.sqrt(feature_dim / 3)
-    # [N, E, D]
-    memory_bank = ((torch.rand(len(train_data), ensemble_size, feature_dim) * 2 * std) - std).to(gpu_ids[0])
+    # init memory bank as unit random vector ---> [N, E, D]
+    memory_bank = F.normalize(torch.randn(len(train_data), ensemble_size, feature_dim), dim=-1).to(gpu_ids[0])
 
     # training loop
     results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}

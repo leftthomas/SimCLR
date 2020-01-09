@@ -30,7 +30,7 @@ def train(net, data_loader, train_optimizer):
         # select memory vectors from memory bank ---> [B, 1+M, E, D]
         samples = torch.index_select(memory_bank, dim=0, index=idx.view(-1)) \
             .view(data.size(0), -1, ensemble_size, feature_dim)
-        # compute cos similarity between each feature vector and memory bank ---> [B, E, 1+K]
+        # compute cos similarity between each feature vector and memory bank ---> [B, E, 1+M]
         sim_matrix = torch.bmm(samples.to(device=features.device).permute(0, 2, 1, 3).contiguous()
                                .view(data.size(0) * ensemble_size, -1, feature_dim),
                                features.view(data.size(0) * ensemble_size, -1).unsqueeze(dim=-1)) \

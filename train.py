@@ -67,7 +67,7 @@ def train(net, data_loader, train_optimizer):
     return total_loss / total_num
 
 
-# test for one epoch, use weighted knn (k=top_k) to find the most similar images' label to assign the test image
+# test for one epoch, use weighted knn to find the most similar images' label to assign the test image
 def test(net, memory_data_loader, test_data_loader):
     net.eval()
     total_top1, total_top5, total_num, feature_bank = 0.0, 0.0, 0, []
@@ -89,13 +89,13 @@ def test(net, memory_data_loader, test_data_loader):
             # compute cos similarity between each feature vector and feature bank ---> [E, B, N]
             sim_matrix = torch.bmm(output.transpose(0, 1).contiguous(), feature_bank)
             # [E, B, K]
-            sim_weight, sim_indices = sim_matrix.topk(k=top_k, dim=-1)
+            sim_weight, sim_indices = sim_matrix.topk(k=k, dim=-1)
             # [E, B, K]
             sim_labels = torch.gather(feature_labels.expand(ensemble_size, data.size(0), -1), dim=-1, index=sim_indices)
             sim_weight = (sim_weight / temperature).exp()
 
             # counts for each class
-            one_hot_label = torch.zeros(ensemble_size * data.size(0) * top_k, c, device=sim_labels.device)
+            one_hot_label = torch.zeros(ensemble_size * data.size(0) * k, c, device=sim_labels.device)
             # [E*B*K, C]
             one_hot_label = one_hot_label.scatter(dim=-1, index=sim_labels.view(-1, 1), value=1.0)
             # weighted score ---> [B, C]
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--negative_num', default=4096, type=int, help='Negative sample number')
     parser.add_argument('--temperature', default=0.1, type=float, help='Temperature used in softmax')
     parser.add_argument('--momentum', default=0.5, type=float, help='Momentum used for the update of memory bank')
-    parser.add_argument('--top_k', default=200, type=int, help='Top k most similar images used to predict the label')
+    parser.add_argument('--k', default=200, type=int, help='Top k most similar images used to predict the label')
     parser.add_argument('--batch_size', default=128, type=int, help='Number of images in each mini-batch')
     parser.add_argument('--epochs', default=200, type=int, help='Number of sweeps over the dataset to train')
     parser.add_argument('--with_random', action='store_true', help='With branch random weight or not')
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     model_type, share_type, ensemble_size = args.model_type, args.share_type, args.ensemble_size
     feature_dim, negative_num, temperature = args.feature_dim, args.negative_num, args.temperature
-    momentum, top_k, batch_size, epochs = args.momentum, args.top_k, args.batch_size, args.epochs
+    momentum, k, batch_size, epochs = args.momentum, args.k, args.batch_size, args.epochs
     with_random, gpu_ids = args.with_random, [int(gpu) for gpu in args.gpu_ids.split(',')]
 
     # data prepare

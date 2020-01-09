@@ -23,7 +23,7 @@ optional arguments:
 --negative_num                Negative sample number [default value is 4096]
 --temperature                 Temperature used in softmax [default value is 0.1]
 --momentum                    Momentum used for the update of memory bank [default value is 0.5]
---top_k                       Top k most similar images used to predict the label [default value is 200]
+--k                           Top k most similar images used to predict the label [default value is 200]
 --batch_size                  Number of images in each mini-batch [default value is 128]
 --epochs                      Number of sweeps over the dataset to train [default value is 200]
 --with_random                 With branch random weight or not [default value is False]

@@ -15,15 +15,16 @@ from model import Model
 
 # train for one epoch, each branch focus on different parts, to learn unique features
 def train(net, data_loader, train_optimizer):
+    global z
     net.train()
-    total_loss, total_num, data_num, train_bar = 0.0, 0, len(data_loader.dataset), tqdm(data_loader)
+    total_loss, total_num, train_bar = 0.0, 0, tqdm(data_loader)
     for data, target, pos_index in train_bar:
         data = data.to(gpu_ids[0])
         train_optimizer.zero_grad()
         features = net(data)
 
         # sample negatives ---> [B, K+1]
-        idx = torch.randint(high=data_num, size=(data.size(0), negative_num + 1))
+        idx = torch.randint(high=n, size=(data.size(0), negative_num + 1))
         # make the first sample as positive
         idx[:, 0] = pos_index
         # select memory vectors from memory bank ---> [B, 1+K, E, D]
@@ -35,18 +36,19 @@ def train(net, data_loader, train_optimizer):
                                features.view(data.size(0) * ensemble_size, -1).unsqueeze(dim=-1)) \
             .view(data.size(0), ensemble_size, -1)
         out = torch.exp(sim_matrix / temperature)
-        # Monte Carlo approximation ---> [1, E, 1]
-        z = out.detach().mean(dim=[0, 2], keepdim=True) * data_num
+        # Monte Carlo approximation ---> [1, E, 1], use the approximation derived from initial batches as z
+        if z is None:
+            z = out.detach().mean(dim=[0, 2], keepdim=True) * n
         # [B, E, 1+K]
         output = out / z
 
         # compute loss
         # TODO: Add branch nce loss
         # log(p_t/(p_t+K*p_i)) ---> [B, E]
-        p_d = (output.select(dim=-1, index=0) / (output.select(dim=-1, index=0) + negative_num / data_num)).log()
+        p_d = (output.select(dim=-1, index=0) / (output.select(dim=-1, index=0) + negative_num / n)).log()
         # log(1-p_f/(p_f+K*p_i)) ---> [B, E, K]
-        p_n = ((negative_num / data_num) / (output.narrow(dim=-1, start=1, length=negative_num)
-                                            + negative_num / data_num)).log()
+        p_n = ((negative_num / n) / (output.narrow(dim=-1, start=1, length=negative_num)
+                                     + negative_num / n)).log()
         # -E(P_d)-K*E(P_n)
         loss = - (p_d.sum() + p_n.sum()) / (data.size(0) * ensemble_size)
         loss.backward()
@@ -68,7 +70,7 @@ def train(net, data_loader, train_optimizer):
 # test for one epoch, use weighted knn (k=top_k) to find the most similar images' label to assign the test image
 def test(net, memory_data_loader, test_data_loader):
     net.eval()
-    total_top1, total_top5, total_num, feature_bank, c = 0.0, 0.0, 0, [], len(memory_data_loader.dataset.classes)
+    total_top1, total_top5, total_num, feature_bank = 0.0, 0.0, 0, []
     with torch.no_grad():
         # generate feature bank
         for data, target, _ in tqdm(memory_data_loader, desc='Feature extracting'):
@@ -115,7 +117,7 @@ if __name__ == '__main__':
                         choices=['resnet18', 'resnet34', 'resnet50', 'resnext50_32x4d'], help='Backbone type')
     parser.add_argument('--share_type', default='layer1', type=str,
                         choices=['none', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4'], help='Shared module type')
-    parser.add_argument('--ensemble_size', default=8, type=int, help='Ensemble model size')
+    parser.add_argument('--ensemble_size', default=8, type=int, help='Ensemble branch size')
     parser.add_argument('--feature_dim', default=16, type=int, help='Feature dim for each branch')
     parser.add_argument('--negative_num', default=4096, type=int, help='Negative sample number')
     parser.add_argument('--temperature', default=0.1, type=float, help='Temperature used in softmax')
@@ -151,6 +153,8 @@ if __name__ == '__main__':
 
     # init memory bank as unit random vector ---> [N, E, D]
     memory_bank = F.normalize(torch.randn(len(train_data), ensemble_size, feature_dim), dim=-1)
+    # z as normalizer, init with None, c as num of train class, n as num of train data
+    z, c, n = None, len(memory_data.classes), len(train_data)
 
     # training loop
     results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}

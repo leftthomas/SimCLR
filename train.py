@@ -18,21 +18,22 @@ def train(net, data_loader, train_optimizer):
     net.train()
     total_loss, total_num, data_num, train_bar = 0.0, 0, len(data_loader.dataset), tqdm(data_loader)
     for data, target, pos_index in train_bar:
-        data, pos_index = data.to(gpu_ids[0]), pos_index.to(gpu_ids[0])
+        data = data.to(gpu_ids[0])
         train_optimizer.zero_grad()
         features = net(data)
 
         # sample negatives ---> [B, K+1]
-        idx = torch.randint(high=data_num, size=(data.size(0), negative_num + 1)).to(gpu_ids[0])
+        idx = torch.randint(high=data_num, size=(data.size(0), negative_num + 1))
         # make the first sample as positive
         idx[:, 0] = pos_index
         # select memory vectors from memory bank ---> [B, 1+K, E, D]
         samples = torch.index_select(memory_bank, dim=0, index=idx.view(-1)) \
             .view(data.size(0), -1, ensemble_size, feature_dim)
         # compute cos similarity between each feature vector and memory bank ---> [B, E, 1+K]
-        sim_matrix = torch.bmm(
-            samples.permute(0, 2, 1, 3).contiguous().view(data.size(0) * ensemble_size, -1, feature_dim),
-            features.view(data.size(0) * ensemble_size, -1).unsqueeze(dim=-1)).view(data.size(0), ensemble_size, -1)
+        sim_matrix = torch.bmm(samples.to(device=features.device).permute(0, 2, 1, 3).contiguous()
+                               .view(data.size(0) * ensemble_size, -1, feature_dim),
+                               features.view(data.size(0) * ensemble_size, -1).unsqueeze(dim=-1)) \
+            .view(data.size(0), ensemble_size, -1)
         out = torch.exp(sim_matrix / temperature)
         # Monte Carlo approximation ---> [1, E, 1]
         z = out.detach().mean(dim=[0, 2], keepdim=True) * data_num
@@ -53,7 +54,7 @@ def train(net, data_loader, train_optimizer):
 
         # update memory bank ---> [B, E, D]
         pos_samples = samples.select(dim=1, index=0)
-        pos_samples = pos_samples * momentum + features.detach() * (1.0 - momentum)
+        pos_samples = pos_samples * momentum + features.detach().cpu() * (1.0 - momentum)
         pos_samples = pos_samples.div(torch.norm(pos_samples, dim=-1, keepdim=True))
         memory_bank.index_copy_(dim=0, index=pos_index, source=pos_samples)
 
@@ -75,7 +76,7 @@ def test(net, memory_data_loader, test_data_loader):
         # [E, D, N]
         feature_bank = torch.cat(feature_bank).permute(1, 2, 0).contiguous()
         # [N]
-        feature_labels = torch.tensor(memory_data_loader.dataset.targets).to(gpu_ids[0])
+        feature_labels = torch.tensor(memory_data_loader.dataset.targets, device=feature_bank.device)
         # loop test data to predict the label by weighted knn search
         test_bar = tqdm(test_data_loader)
         for data, target, _ in test_bar:
@@ -92,7 +93,7 @@ def test(net, memory_data_loader, test_data_loader):
             sim_weight = (sim_weight / temperature).exp()
 
             # counts for each class
-            one_hot_label = torch.zeros(ensemble_size * data.size(0) * top_k, c).to(gpu_ids[0])
+            one_hot_label = torch.zeros(ensemble_size * data.size(0) * top_k, c, device=sim_labels.device)
             # [E*B*K, C]
             one_hot_label = one_hot_label.scatter(dim=-1, index=sim_labels.view(-1, 1), value=1.0)
             # weighted score ---> [B, C]
@@ -149,7 +150,7 @@ if __name__ == '__main__':
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(epochs * 0.6), int(epochs * 0.8)], gamma=0.1)
 
     # init memory bank as unit random vector ---> [N, E, D]
-    memory_bank = F.normalize(torch.randn(len(train_data), ensemble_size, feature_dim), dim=-1).to(gpu_ids[0])
+    memory_bank = F.normalize(torch.randn(len(train_data), ensemble_size, feature_dim), dim=-1)
 
     # training loop
     results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}

@@ -43,12 +43,12 @@ def train(net, data_loader, train_optimizer):
         output = out / z
 
         # compute loss
-        # TODO: Add branch nce loss
         # compute log(h(i|v))=log(P(i|v)/(P(i|v)+M*P_n(i))) ---> [B, E]
         p_d = (output.select(dim=-1, index=0) / (output.select(dim=-1, index=0) + m / n)).log()
         # compute log(1-h(i|v'))=log(1-P(i|v')/(P(i|v')+M*P_n(i))) ---> [B, E, M]
         p_n = ((m / n) / (output.narrow(dim=-1, start=1, length=m) + m / n)).log()
         # compute J_NCE(θ)=-E(P_d)-M*E(P_n)
+        # TODO: Add branch nce loss
         loss = - (p_d.sum() + p_n.sum()) / (data.size(0) * ensemble_size)
         loss.backward()
         train_optimizer.step()

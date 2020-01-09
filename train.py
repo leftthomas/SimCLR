@@ -23,7 +23,7 @@ def train(net, data_loader, train_optimizer):
         train_optimizer.zero_grad()
         features = net(data)
 
-        # sample negatives ---> [B, M+1]
+        # randomly generate M+1 sample indexes for each batch ---> [B, M+1]
         idx = torch.randint(high=n, size=(data.size(0), m + 1))
         # make the first sample as positive
         idx[:, 0] = pos_index
@@ -151,10 +151,10 @@ if __name__ == '__main__':
                                                for param in model.parameters()))
     lr_scheduler = MultiStepLR(optimizer, milestones=[int(epochs * 0.6), int(epochs * 0.8)], gamma=0.1)
 
-    # init memory bank as unit random vector ---> [N, E, D]
-    memory_bank = F.normalize(torch.randn(len(train_data), ensemble_size, feature_dim), dim=-1)
     # z as normalizer, init with None, c as num of train class, n as num of train data
     z, c, n = None, len(memory_data.classes), len(train_data)
+    # init memory bank as unit random vector ---> [N, E, D]
+    memory_bank = F.normalize(torch.randn(n, ensemble_size, feature_dim), dim=-1)
 
     # training loop
     results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}

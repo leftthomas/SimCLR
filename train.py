@@ -168,7 +168,7 @@ if __name__ == '__main__':
         # save statistics
         data_frame = pd.DataFrame(data=results, index=range(1, epoch + 1))
         data_frame.to_csv('results/{}_features_extractor_results.csv'.format(save_name_pre), index_label='epoch')
-        lr_scheduler.step(epoch)
+        lr_scheduler.step()
         if test_acc_1 > best_acc:
             best_acc = test_acc_1
             torch.save(model.module.state_dict(), 'epochs/{}_features_extractor.pth'.format(save_name_pre))

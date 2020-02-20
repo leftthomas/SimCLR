@@ -30,16 +30,6 @@ optional arguments:
 --gpu_ids                     Selected gpu [default value is '0,1,2,3,4,5,6,7']
 ```
 
-### Test MVC
-```
-python test.py --epochs 200 --batch_size 128
-optional arguments:
---batch_size                  Number of images in each mini-batch [default value is 256]
---epochs                      Number of sweeps over the dataset to train [default value is 100]
---data_path                   Features extractor file [default value is 'epochs/cifar10_resnet18_layer1_32_4_features_extractor.pth']
---gpu_ids                     Selected gpu [default value is '0,1,2,3,4,5,6,7']
-```
-
 ## Results
 
 <table>

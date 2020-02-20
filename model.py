@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.models.resnet import resnet18
 
 
@@ -20,4 +21,4 @@ class Model(nn.Module):
         x = self.f(x)
         feature = torch.flatten(x, start_dim=1)
         out = self.g(feature)
-        return feature, out
+        return F.normalize(feature, dim=-1), out

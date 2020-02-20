@@ -27,7 +27,7 @@ def train(net, data_loader, train_optimizer):
         sim_matrix = sim_matrix.masked_select(mask).view(2 * batch_size, -1)
 
         # compute loss
-        pos_sim = torch.sum(out_1 * out_2, dim=-1)
+        pos_sim = torch.exp(torch.sum(out_1 * out_2, dim=-1) / temperature)
         pos_sim = torch.cat([pos_sim, pos_sim], dim=0)
         loss = (- torch.log(pos_sim / sim_matrix.sum(dim=-1))).mean()
         train_optimizer.zero_grad()

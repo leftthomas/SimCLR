@@ -28,7 +28,7 @@ def train(net, data_loader, train_optimizer):
         # compute loss
         pos_sim = torch.sum(out_1 * out_2, dim=-1)
         pos_sim = torch.cat([pos_sim, pos_sim], dim=0)
-        loss = - torch.log(pos_sim / sim_matrix.sum(dim=-1))
+        loss = (- torch.log(pos_sim / sim_matrix.sum(dim=-1))).mean()
         train_optimizer.zero_grad()
         loss.backward()
         train_optimizer.step()

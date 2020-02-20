@@ -19,15 +19,22 @@ def train(net, data_loader, train_optimizer):
         pos_1, pos_2 = pos_1.cuda(), pos_2.cuda()
         feature_1, out_1 = net(pos_1)
         feature_2, out_2 = net(pos_2)
+        # [2*B, D]
+        out = torch.cat([out_1, out_2], dim=0)
+        # [2*B, 2*B]
+        sim_matrix = torch.exp(torch.mm(out, out.t().contiguous()) / temperature)
+        sim_matrix[torch.eye(2 * batch_size, device=sim_matrix.device).bool()] = 0.0
 
         # compute loss
-        loss = - (p_d.sum() + p_n.sum()) / (pos_1.size(0) * ensemble_size)
+        pos_sim = torch.sum(out_1 * out_2, dim=-1)
+        pos_sim = torch.cat([pos_sim, pos_sim], dim=0)
+        loss = - torch.log(pos_sim / sim_matrix.sum(dim=-1))
         train_optimizer.zero_grad()
         loss.backward()
         train_optimizer.step()
 
-        total_num += pos_1.size(0)
-        total_loss += loss.item() * pos_1.size(0)
+        total_num += batch_size
+        total_loss += loss.item() * batch_size
         train_bar.set_description('Train Epoch: [{}/{}] Loss: {:.4f}'.format(epoch, epochs, total_loss / total_num))
 
     return total_loss / total_num
@@ -90,7 +97,7 @@ if __name__ == '__main__':
 
     # data prepare
     train_data = utils.CIFAR10Instance(root='data', train=True, transform=utils.train_transform, download=True)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
     memory_data = utils.CIFAR10Instance(root='data', train=True, transform=utils.test_transform, download=True)
     memory_loader = DataLoader(memory_data, batch_size=batch_size, shuffle=False, num_workers=16)
     test_data = utils.CIFAR10Instance(root='data', train=False, transform=utils.test_transform, download=True)

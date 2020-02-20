@@ -21,4 +21,4 @@ class Model(nn.Module):
         x = self.f(x)
         feature = torch.flatten(x, start_dim=1)
         out = self.g(feature)
-        return F.normalize(feature, dim=-1), out
+        return F.normalize(feature, dim=-1), F.normalize(out, dim=-1)

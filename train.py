@@ -11,22 +11,23 @@ import utils
 from model import Model
 
 
-# train for one epoch, each branch focus on different parts, to learn unique features
+# train for one epoch to learn unique features
 def train(net, data_loader, train_optimizer):
     net.train()
     total_loss, total_num, train_bar = 0.0, 0, tqdm(data_loader)
-    for data, target, pos_index in train_bar:
-        data = data.to(gpu_ids[0])
-        train_optimizer.zero_grad()
-        features = net(data)
+    for pos_1, pos_2, target in train_bar:
+        pos_1, pos_2 = pos_1.cuda(), pos_2.cuda()
+        feature_1, out_1 = net(pos_1)
+        feature_2, out_2 = net(pos_2)
 
         # compute loss
-        loss = - (p_d.sum() + p_n.sum()) / (data.size(0) * ensemble_size)
+        loss = - (p_d.sum() + p_n.sum()) / (pos_1.size(0) * ensemble_size)
+        train_optimizer.zero_grad()
         loss.backward()
         train_optimizer.step()
 
-        total_num += data.size(0)
-        total_loss += loss.item() * data.size(0)
+        total_num += pos_1.size(0)
+        total_loss += loss.item() * pos_1.size(0)
         train_bar.set_description('Train Epoch: [{}/{}] Loss: {:.4f}'.format(epoch, epochs, total_loss / total_num))
 
     return total_loss / total_num

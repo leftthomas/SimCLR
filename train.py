@@ -102,12 +102,12 @@ if __name__ == '__main__':
     feature_dim, temperature, batch_size, epochs = args.feature_dim, args.temperature, args.batch_size, args.epochs
 
     # data prepare
-    train_data = utils.ImageNet(root='data', train=True, transform=utils.train_transform, download=True)
+    train_data = utils.CIFAR10Pair(root='{}/{}'.format(data_path, 'train'), transform=utils.train_transform)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True,
                               drop_last=True)
-    memory_data = utils.ImageNet(root='data', train=True, transform=utils.test_transform, download=True)
+    memory_data = utils.CIFAR10Pair(root='{}/{}'.format(data_path, 'train'), transform=utils.test_transform)
     memory_loader = DataLoader(memory_data, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
-    test_data = utils.ImageNet(root='data', train=False, transform=utils.test_transform, download=True)
+    test_data = utils.CIFAR10Pair(root='{}/{}'.format(data_path, 'val'), transform=utils.test_transform)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
 
     # model setup and optimizer config

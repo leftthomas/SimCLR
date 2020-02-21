@@ -1,11 +1,15 @@
-# MVC
-A PyTorch implementation of MVC based on the paper [Multi-View Combination for Unsupervised Visual Representation Learning]().
+# SimCLR
+A PyTorch implementation of SimCLR based on the paper [A Simple Framework for Contrastive Learning of Visual Representations](https://arxiv.org/abs/2002.05709).
 
 ## Requirements
 - [Anaconda](https://www.anaconda.com/download/)
 - [PyTorch](https://pytorch.org)
 ```
 conda install pytorch torchvision cudatoolkit=10.0 -c pytorch
+```
+- thop
+```
+pip install thop
 ```
 
 ## Dataset
@@ -31,6 +35,12 @@ optional arguments:
 ```
 
 ## Results
+There are some difference between this implementation and official implementation:
+1. No `Gaussian blur` used;
+2. `Adam` optimizer with learning rate `1e-3` is used to replace `LARS` optimizer;
+3. No `Linear learning rate scaling` and `Weight decay` used;
+4. No `Linear Warmup` and `CosineLR Schedule` used;
+5. `KNN evaluation protocol` is used to replace `Linear evaluation protocol` to obtain the test accuracy.
 
 <table>
 	<tbody>

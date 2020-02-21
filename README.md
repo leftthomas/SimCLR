@@ -17,12 +17,12 @@ pip install thop
 
 ## Usage
 ```
-python main.py --batch_size 4096 --epochs 1000 
+python main.py --batch_size 1024 --epochs 1000 
 optional arguments:
 --feature_dim                 Feature dim for latent vector [default value is 128]
 --temperature                 Temperature used in softmax [default value is 0.5]
 --k                           Top k most similar images used to predict the label [default value is 200]
---batch_size                  Number of images in each mini-batch [default value is 1024]
+--batch_size                  Number of images in each mini-batch [default value is 512]
 --epochs                      Number of sweeps over the dataset to train [default value is 500]
 ```
 
@@ -39,19 +39,23 @@ There are some difference between this implementation and official implementatio
 		<!-- START TABLE -->
 		<!-- TABLE HEADER -->
 		<th>Backbone</th>
-		<th>feature dim</th>
-		<th>batch size</th>
-		<th>epoch num</th>
-		<th>temperature</th>
-		<th>k</th>
+		<th>Params (M)</th>
+		<th>FLOPs (G)</th>
+		<th>Feature Dim</th>
+		<th>Batch Size</th>
+		<th>Epoch Num</th>
+		<th>Temperature</th>
+		<th>K</th>
 		<th>Top1 Acc %</th>
 		<th>Top5 Acc %</th>
-		<th>download link</th>
+		<th>Download</th>
 		<!-- TABLE BODY -->
 		<tr>
 			<td align="center">ResNet50</td>
+			<td align="center">23.78</td>
+			<td align="center">1.31</td>
 			<td align="center">128</td>
-			<td align="center">1024</td>
+			<td align="center">512</td>
 			<td align="center">500</td>
 			<td align="center">0.5</td>
 			<td align="center">200</td>

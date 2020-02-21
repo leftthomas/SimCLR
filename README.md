@@ -44,7 +44,7 @@ There are some difference between this implementation and official implementatio
 		<th>Feature Dim</th>
 		<th>Batch Size</th>
 		<th>Epoch Num</th>
-		<th>Temperature</th>
+		<th>τ</th>
 		<th>K</th>
 		<th>Top1 Acc %</th>
 		<th>Top5 Acc %</th>
@@ -59,7 +59,7 @@ There are some difference between this implementation and official implementatio
 			<td align="center">500</td>
 			<td align="center">0.5</td>
 			<td align="center">200</td>
-			<td align="center">-</td>
+			<td align="center">93.5</td>
 			<td align="center">-</td>
 			<td align="center"><a href="https://pan.baidu.com/s/1jP7zWezVPBZWx_9LjJCgWg">model</a>&nbsp;|&nbsp;xxi8</td>
 		</tr>

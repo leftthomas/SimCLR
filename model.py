@@ -9,8 +9,10 @@ class Model(nn.Module):
         super(Model, self).__init__()
 
         self.f = []
-        for module in resnet50().children():
-            if not isinstance(module, nn.Linear):
+        for name, module in resnet50().named_children():
+            if name == 'conv1':
+                module = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+            if not isinstance(module, nn.Linear) and not isinstance(module, nn.MaxPool2d):
                 self.f.append(module)
         # encoder
         self.f = nn.Sequential(*self.f)

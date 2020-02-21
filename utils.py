@@ -1,18 +1,14 @@
 import torchvision.datasets as datasets
-from PIL import Image
 from torchvision import transforms
 
 
-class CIFAR10Instance(datasets.CIFAR10):
-    """CIFAR10Instance Dataset.
+class ImageNet(datasets.ImageFolder):
+    """ImageNet Dataset.
     """
 
     def __getitem__(self, index):
-        img, target = self.data[index], self.targets[index]
-
-        # doing this so that it is consistent with all other datasets
-        # to return a PIL Image
-        img = Image.fromarray(img)
+        path, target = self.samples[index]
+        img = self.loader(path)
 
         if self.transform is not None:
             pos_1 = self.transform(img)
@@ -25,13 +21,15 @@ class CIFAR10Instance(datasets.CIFAR10):
 
 
 train_transform = transforms.Compose([
-    transforms.RandomResizedCrop(32),
+    transforms.RandomResizedCrop(224),
     transforms.RandomHorizontalFlip(p=0.5),
     transforms.RandomApply([transforms.ColorJitter(0.8, 0.8, 0.8, 0.2)], p=0.8),
     transforms.RandomGrayscale(p=0.2),
     transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
 test_transform = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
     transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])

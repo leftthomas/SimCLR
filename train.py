@@ -1,4 +1,5 @@
 import argparse
+import warnings
 
 import pandas as pd
 import torch
@@ -10,13 +11,15 @@ from tqdm import tqdm
 import utils
 from model import Model
 
+warnings.filterwarnings("ignore")
+
 
 # train for one epoch to learn unique features
 def train(net, data_loader, train_optimizer):
     net.train()
     total_loss, total_num, train_bar = 0.0, 0, tqdm(data_loader)
     for pos_1, pos_2, target in train_bar:
-        pos_1, pos_2 = pos_1.cuda(), pos_2.cuda()
+        pos_1, pos_2 = pos_1.cuda(non_blocking=True), pos_2.cuda(non_blocking=True)
         feature_1, out_1 = net(pos_1)
         feature_2, out_2 = net(pos_2)
         # [2*B, D]
@@ -48,7 +51,7 @@ def test(net, memory_data_loader, test_data_loader):
     with torch.no_grad():
         # generate feature bank
         for data, _, target in tqdm(memory_data_loader, desc='Feature extracting'):
-            feature, out = net(data.cuda())
+            feature, out = net(data.cuda(non_blocking=True))
             feature_bank.append(feature)
         # [D, N]
         feature_bank = torch.cat(feature_bank, dim=0).t().contiguous()
@@ -57,7 +60,7 @@ def test(net, memory_data_loader, test_data_loader):
         # loop test data to predict the label by weighted knn search
         test_bar = tqdm(test_data_loader)
         for data, _, target in test_bar:
-            data, target = data.cuda(), target.cuda()
+            data, target = data.cuda(non_blocking=True), target.cuda(non_blocking=True)
             feature, out = net(data)
 
             total_num += data.size(0)
@@ -87,6 +90,7 @@ def test(net, memory_data_loader, test_data_loader):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train MVC')
+    parser.add_argument('--data_path', type=str, default='/home/data/imagenet/ILSVRC2012', help='Path to dataset')
     parser.add_argument('--feature_dim', default=128, type=int, help='Feature dim for latent vector')
     parser.add_argument('--temperature', default=0.1, type=float, help='Temperature used in softmax')
     parser.add_argument('--batch_size', default=512, type=int, help='Number of images in each mini-batch')
@@ -94,15 +98,17 @@ if __name__ == '__main__':
 
     # args parse
     args = parser.parse_args()
+    data_path = args.data_path
     feature_dim, temperature, batch_size, epochs = args.feature_dim, args.temperature, args.batch_size, args.epochs
 
     # data prepare
-    train_data = utils.CIFAR10Instance(root='data', train=True, transform=utils.train_transform, download=True)
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16, drop_last=True)
-    memory_data = utils.CIFAR10Instance(root='data', train=True, transform=utils.test_transform, download=True)
-    memory_loader = DataLoader(memory_data, batch_size=batch_size, shuffle=False, num_workers=16)
-    test_data = utils.CIFAR10Instance(root='data', train=False, transform=utils.test_transform, download=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=16)
+    train_data = utils.ImageNet(root='data', train=True, transform=utils.train_transform, download=True)
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True,
+                              drop_last=True)
+    memory_data = utils.ImageNet(root='data', train=True, transform=utils.test_transform, download=True)
+    memory_loader = DataLoader(memory_data, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
+    test_data = utils.ImageNet(root='data', train=False, transform=utils.test_transform, download=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
 
     # model setup and optimizer config
     model = Model(feature_dim).cuda()

@@ -90,24 +90,22 @@ def test(net, memory_data_loader, test_data_loader):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train MVC')
-    parser.add_argument('--data_path', type=str, default='/home/data/imagenet/ILSVRC2012', help='Path to dataset')
     parser.add_argument('--feature_dim', default=128, type=int, help='Feature dim for latent vector')
-    parser.add_argument('--temperature', default=0.1, type=float, help='Temperature used in softmax')
-    parser.add_argument('--batch_size', default=512, type=int, help='Number of images in each mini-batch')
-    parser.add_argument('--epochs', default=100, type=int, help='Number of sweeps over the dataset to train')
+    parser.add_argument('--temperature', default=0.5, type=float, help='Temperature used in softmax')
+    parser.add_argument('--batch_size', default=1024, type=int, help='Number of images in each mini-batch')
+    parser.add_argument('--epochs', default=500, type=int, help='Number of sweeps over the dataset to train')
 
     # args parse
     args = parser.parse_args()
-    data_path = args.data_path
     feature_dim, temperature, batch_size, epochs = args.feature_dim, args.temperature, args.batch_size, args.epochs
 
     # data prepare
-    train_data = utils.CIFAR10Pair(root='{}/{}'.format(data_path, 'train'), transform=utils.train_transform)
+    train_data = utils.CIFAR10Pair(root='data', train=True, transform=utils.train_transform, download=True)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True,
                               drop_last=True)
-    memory_data = utils.CIFAR10Pair(root='{}/{}'.format(data_path, 'train'), transform=utils.test_transform)
+    memory_data = utils.CIFAR10Pair(root='data', train=True, transform=utils.test_transform, download=True)
     memory_loader = DataLoader(memory_data, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
-    test_data = utils.CIFAR10Pair(root='{}/{}'.format(data_path, 'val'), transform=utils.test_transform)
+    test_data = utils.CIFAR10Pair(root='data', train=False, transform=utils.test_transform, download=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
 
     # model setup and optimizer config

@@ -1,5 +1,4 @@
 import argparse
-import warnings
 
 import pandas as pd
 import torch
@@ -10,8 +9,6 @@ from tqdm import tqdm
 
 import utils
 from model import Model
-
-warnings.filterwarnings("ignore")
 
 
 # train for one epoch to learn unique features
@@ -27,10 +24,12 @@ def train(net, data_loader, train_optimizer):
         # [2*B, 2*B]
         sim_matrix = torch.exp(torch.mm(out, out.t().contiguous()) / temperature)
         mask = (torch.ones_like(sim_matrix) - torch.eye(2 * batch_size, device=sim_matrix.device)).bool()
+        # [2*B, 2*B-1]
         sim_matrix = sim_matrix.masked_select(mask).view(2 * batch_size, -1)
 
         # compute loss
         pos_sim = torch.exp(torch.sum(out_1 * out_2, dim=-1) / temperature)
+        # [2*B]
         pos_sim = torch.cat([pos_sim, pos_sim], dim=0)
         loss = (- torch.log(pos_sim / sim_matrix.sum(dim=-1))).mean()
         train_optimizer.zero_grad()

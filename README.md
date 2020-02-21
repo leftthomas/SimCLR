@@ -38,30 +38,26 @@ There are some difference between this implementation and official implementatio
 	<tbody>
 		<!-- START TABLE -->
 		<!-- TABLE HEADER -->
-		<th>Name</th>
-		<th>train time (s/iter)</th>
-		<th>train mem (GB)</th>
+		<th>Backbone</th>
+		<th>feature dim</th>
+		<th>batch size</th>
+		<th>epoch num</th>
+		<th>temperature</th>
+		<th>k</th>
 		<th>Top1 Acc %</th>
 		<th>Top5 Acc %</th>
 		<th>download link</th>
 		<!-- TABLE BODY -->
-		<!-- ROW: r18 -->
-		<tr>
-			<td align="center">ResNet18</td>
-			<td align="center">80.49</td>
-			<td align="center">53.92</td>
-			<td align="center">42.71</td>
-			<td align="center">68.69</td>
-			<td align="center"><a href="https://pan.baidu.com/s/1jP7zWezVPBZWx_9LjJCgWg">model</a>&nbsp;|&nbsp;xxi8</td>
-		</tr>
-		<!-- ROW: r50 -->
 		<tr>
 			<td align="center">ResNet50</td>
-			<td align="center">81.16</td>
-			<td align="center">54.54</td>
-			<td align="center">43.61</td>
-			<td align="center">69.50</td>
-			<td align="center"><a href="https://pan.baidu.com/s/1BeGS7gckGAczd1euB55EFA">model</a>&nbsp;|&nbsp;1jhd</td>
+			<td align="center">128</td>
+			<td align="center">1024</td>
+			<td align="center">500</td>
+			<td align="center">0.5</td>
+			<td align="center">200</td>
+			<td align="center">-</td>
+			<td align="center">-</td>
+			<td align="center"><a href="https://pan.baidu.com/s/1jP7zWezVPBZWx_9LjJCgWg">model</a>&nbsp;|&nbsp;xxi8</td>
 		</tr>
 	</tbody>
 </table>

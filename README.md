@@ -13,25 +13,17 @@ pip install thop
 ```
 
 ## Dataset
-`CIFAR10` dataset is used in this repo, the dataset will be downloaded by `PyTorch` automatically.
+`CIFAR10` dataset is used in this repo, the dataset will be downloaded into `data` directory by `PyTorch` automatically.
 
 ## Usage
-### Train MVC
 ```
-python train.py --epochs 50
+python main.py --batch_size 4096 --epochs 1000 
 optional arguments:
---model_type                  Backbone type [default value is 'resnet18'] (choices=['resnet18', 'resnet34', 'resnet50', 'resnext50_32x4d'])
---share_type                  Shared module type [default value is 'layer1'] (choices=['none', 'maxpool', 'layer1', 'layer2', 'layer3', 'layer4'])
---ensemble_size               Ensemble branch size [default value is 8]
---feature_dim                 Feature dim for each branch [default value is 16]
---m                           Negative sample number [default value is 4096]
---temperature                 Temperature used in softmax [default value is 0.1]
---momentum                    Momentum used for the update of memory bank [default value is 0.5]
+--feature_dim                 Feature dim for latent vector [default value is 128]
+--temperature                 Temperature used in softmax [default value is 0.5]
 --k                           Top k most similar images used to predict the label [default value is 200]
---batch_size                  Number of images in each mini-batch [default value is 128]
---epochs                      Number of sweeps over the dataset to train [default value is 200]
---with_random                 With branch random weight or not [default value is False]
---gpu_ids                     Selected gpu [default value is '0,1,2,3,4,5,6,7']
+--batch_size                  Number of images in each mini-batch [default value is 1024]
+--epochs                      Number of sweeps over the dataset to train [default value is 500]
 ```
 
 ## Results

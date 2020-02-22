@@ -16,6 +16,7 @@ pip install thop
 `CIFAR10` dataset is used in this repo, the dataset will be downloaded into `data` directory by `PyTorch` automatically.
 
 ## Usage
+### Train SimCLR
 ```
 python main.py --batch_size 1024 --epochs 1000 
 optional arguments:
@@ -26,19 +27,28 @@ optional arguments:
 --epochs                      Number of sweeps over the dataset to train [default value is 500]
 ```
 
+### Linear Evaluation
+```
+python linear.py --batch_size 1024 --epochs 200 
+optional arguments:
+--model_path                  The pretrained model path [default value is 'results/128_0.5_200_512_500_model.pth']
+--batch_size                  Number of images in each mini-batch [default value is 512]
+--epochs                      Number of sweeps over the dataset to train [default value is 100]
+```
+
 ## Results
-There are some difference between this implementation and official implementation:
+There are some difference between this implementation and official implementation, the model (`ResNet50`) is trained on 
+one NVIDIA TESLA V100(32G) GPU:
 1. No `Gaussian blur` used;
 2. `Adam` optimizer with learning rate `1e-3` is used to replace `LARS` optimizer;
 3. No `Linear learning rate scaling` used;
-4. No `Linear Warmup` and `CosineLR Schedule` used;
-5. `KNN evaluation protocol` is used to replace `Linear evaluation protocol` to obtain the test accuracy.
+4. No `Linear Warmup` and `CosineLR Schedule` used.
 
 <table>
 	<tbody>
 		<!-- START TABLE -->
 		<!-- TABLE HEADER -->
-		<th>Backbone</th>
+		<th>Evaluation</th>
 		<th>Params (M)</th>
 		<th>FLOPs (G)</th>
 		<th>Feature Dim</th>
@@ -51,7 +61,7 @@ There are some difference between this implementation and official implementatio
 		<th>Download</th>
 		<!-- TABLE BODY -->
 		<tr>
-			<td align="center">ResNet50</td>
+			<td align="center">KNN</td>
 			<td align="center">24.62</td>
 			<td align="center">1.31</td>
 			<td align="center">128</td>
@@ -61,6 +71,19 @@ There are some difference between this implementation and official implementatio
 			<td align="center">200</td>
 			<td align="center">93.5</td>
 			<td align="center">-</td>
+			<td align="center"><a href="https://pan.baidu.com/s/1jP7zWezVPBZWx_9LjJCgWg">model</a>&nbsp;|&nbsp;xxi8</td>
+		</tr>
+		<tr>
+			<td align="center">Linear</td>
+			<td align="center">24.62</td>
+			<td align="center">1.31</td>
+			<td align="center">-</td>
+			<td align="center">512</td>
+			<td align="center">100</td>
+			<td align="center">-</td>
+			<td align="center">-</td>
+			<td align="center"><b>93.5</b></td>
+			<td align="center"><b>-</b></td>
 			<td align="center"><a href="https://pan.baidu.com/s/1jP7zWezVPBZWx_9LjJCgWg">model</a>&nbsp;|&nbsp;xxi8</td>
 		</tr>
 	</tbody>

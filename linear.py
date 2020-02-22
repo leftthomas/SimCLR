@@ -21,7 +21,7 @@ class Net(nn.Module):
         # encoder
         self.f = Model().f
         # classifier
-        self.fc = nn.Linear(128, num_class)
+        self.fc = nn.Linear(2048, num_class)
         if pretrained:
             state_dict = torch.load('results/128_0.5_200_512_500_model.pth', map_location='cpu')
             self.load_state_dict(state_dict, strict=False)

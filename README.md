@@ -52,7 +52,7 @@ There are some difference between this implementation and official implementatio
 		<!-- TABLE BODY -->
 		<tr>
 			<td align="center">ResNet50</td>
-			<td align="center">23.78</td>
+			<td align="center">24.62</td>
 			<td align="center">1.31</td>
 			<td align="center">128</td>
 			<td align="center">512</td>

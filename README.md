@@ -30,7 +30,7 @@ optional arguments:
 There are some difference between this implementation and official implementation:
 1. No `Gaussian blur` used;
 2. `Adam` optimizer with learning rate `1e-3` is used to replace `LARS` optimizer;
-3. No `Linear learning rate scaling` and `Weight decay` used;
+3. No `Linear learning rate scaling` used;
 4. No `Linear Warmup` and `CosineLR Schedule` used;
 5. `KNN evaluation protocol` is used to replace `Linear evaluation protocol` to obtain the test accuracy.
 

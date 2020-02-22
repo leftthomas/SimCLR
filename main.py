@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import pandas as pd
 import torch
@@ -120,6 +121,8 @@ if __name__ == '__main__':
     # training loop
     results = {'train_loss': [], 'test_acc@1': [], 'test_acc@5': []}
     save_name_pre = '{}_{}_{}_{}_{}'.format(feature_dim, temperature, k, batch_size, epochs)
+    if not os.path.exists('results'):
+        os.mkdir('results')
     best_acc = 0.0
     for epoch in range(1, epochs + 1):
         train_loss = train(model, train_loader, optimizer)

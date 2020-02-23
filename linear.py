@@ -3,7 +3,6 @@ import argparse
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from thop import profile, clever_format
 from torch.utils.data import DataLoader
@@ -27,7 +26,7 @@ class Net(nn.Module):
     def forward(self, x):
         x = self.f(x)
         feature = torch.flatten(x, start_dim=1)
-        out = self.fc(F.normalize(feature, dim=-1))
+        out = self.fc(feature)
         return out
 
 

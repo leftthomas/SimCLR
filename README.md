@@ -1,6 +1,8 @@
 # SimCLR
 A PyTorch implementation of SimCLR based on the paper [A Simple Framework for Contrastive Learning of Visual Representations](https://arxiv.org/abs/2002.05709).
 
+![Network Architecture image from the paper](structure.png)
+
 ## Requirements
 - [Anaconda](https://www.anaconda.com/download/)
 - [PyTorch](https://pytorch.org)
